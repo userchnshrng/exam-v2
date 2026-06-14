@@ -20,8 +20,10 @@ public class StatisticsServiceImpl implements StatisticsService {
     }
 
     @Override
-    public Map<String, Object> scoreDistribution() {
-        List<Score> all = scoreMapper.list(null, 0, 10000);
+    public Map<String, Object> scoreDistribution(Integer examCode) {
+        List<Score> all = examCode != null
+                ? scoreMapper.listByExamCode(examCode)
+                : scoreMapper.list(null, 0, 10000);
         int[] buckets = new int[5]; // 0-59, 60-69, 70-79, 80-89, 90-100
         String[] labels = {"0-59(不及格)", "60-69(及格)", "70-79(中)", "80-89(良)", "90-100(优)"};
 

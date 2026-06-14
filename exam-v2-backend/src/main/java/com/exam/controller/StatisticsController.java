@@ -17,10 +17,11 @@ public class StatisticsController {
         this.statisticsService = statisticsService;
     }
 
-    /** 成绩分布 */
+    /** 成绩分布 — 可选按 examCode 过滤单场考试 */
     @GetMapping("/score-distribution")
-    public ApiResponse<Map<String, Object>> scoreDistribution() {
-        return ApiResponse.success(statisticsService.scoreDistribution());
+    public ApiResponse<Map<String, Object>> scoreDistribution(
+            @RequestParam(required = false) Integer examCode) {
+        return ApiResponse.success(statisticsService.scoreDistribution(examCode));
     }
 
     /** 各考试平均分对比 */

@@ -5,8 +5,8 @@ import java.util.Map;
 
 public interface StatisticsService {
 
-    /** 成绩分布（按分段统计） */
-    Map<String, Object> scoreDistribution();
+    /** 成绩分布（按分段统计），可选按 examCode 过滤单场考试 */
+    Map<String, Object> scoreDistribution(Integer examCode);
 
     /** 各考试平均分对比 */
     List<Map<String, Object>> examScoreComparison();

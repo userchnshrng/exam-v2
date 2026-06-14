@@ -33,8 +33,10 @@ export interface ExamOption {
     examName: string
 }
 
-export function getScoreDistribution() {
-    return http.get<ApiResponse<ScoreDistribution>>('/api/statistics/score-distribution')
+export function getScoreDistribution(examCode?: number) {
+    return http.get<ApiResponse<ScoreDistribution>>('/api/statistics/score-distribution', {
+        params: examCode != null ? { examCode } : undefined
+    })
 }
 
 export function getExamComparison() {

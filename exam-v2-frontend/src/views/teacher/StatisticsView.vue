@@ -4,7 +4,16 @@
       <!-- ====== 成绩分布饼图 ====== -->
       <el-col :span="12">
         <el-card shadow="never" class="chart-card">
-          <template #header><span>成绩分布</span></template>
+          <template #header>
+            <div class="card-header-row">
+              <span>成绩分布</span>
+              <el-select v-model="selectedPieExam" placeholder="全部考试" clearable
+                         @change="onPieExamChange" style="width:220px" size="small">
+                <el-option v-for="e in examOptions" :key="e.examCode"
+                           :label="e.examName" :value="e.examCode" />
+              </el-select>
+            </div>
+          </template>
           <v-chart :option="pieOption" style="height:350px" v-if="pieOption" />
           <el-empty v-else description="暂无数据" :image-size="80" />
           <div class="chart-summary">
@@ -67,17 +76,22 @@ const examComparison = ref<ExamComparisonItem[]>([])
 const studentScores = ref<StudentScoreItem[]>([])
 const examOptions = ref<ExamOption[]>([])
 const selectedExam = ref<number | null>(null)
+const selectedPieExam = ref<number | null>(null)
 const studentLoading = ref(false)
 
 const pieOption = ref<any>(null)
 const barOption = ref<any>(null)
 
-async function loadDistribution() {
+async function loadDistribution(examCode?: number) {
   try {
-    const res = await getScoreDistribution()
+    const res = await getScoreDistribution(examCode)
     if (res.data.code === 0) {
       distribution.value = res.data.data
       const d = res.data.data.distribution
+      if (!d || d.length === 0) {
+        pieOption.value = null
+        return
+      }
       pieOption.value = {
         tooltip: { trigger: 'item' },
         legend: { bottom: 0 },
@@ -89,6 +103,10 @@ async function loadDistribution() {
       }
     }
   } catch { /* ignore */ }
+}
+
+function onPieExamChange() {
+  loadDistribution(selectedPieExam.value ?? undefined)
 }
 
 async function loadExamComparison() {
@@ -200,5 +218,6 @@ onMounted(() => {
 <style scoped>
 .statistics { display: flex; flex-direction: column; }
 .chart-card { border-radius: 8px; }
+.card-header-row { display: flex; align-items: center; justify-content: space-between; width: 100%; }
 .chart-summary { display: flex; gap: 8px; justify-content: center; margin-top: 8px; }
 </style>

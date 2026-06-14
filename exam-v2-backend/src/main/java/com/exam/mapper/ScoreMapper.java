@@ -34,6 +34,10 @@ public interface ScoreMapper {
     @Select("SELECT * FROM score WHERE scoreId = #{scoreId}")
     Score findById(@Param("scoreId") Integer scoreId);
 
+    /** 按考试编号取全部成绩（用于单场考试统计） */
+    @Select("SELECT * FROM score WHERE examCode = #{examCode}")
+    List<Score> listByExamCode(@Param("examCode") Integer examCode);
+
     @Insert("INSERT INTO score (examCode, studentId, subject, etScore, answerDate) " +
             "VALUES (#{examCode}, #{studentId}, #{subject}, #{etScore}, #{answerDate})")
     @Options(useGeneratedKeys = true, keyProperty = "scoreId")
