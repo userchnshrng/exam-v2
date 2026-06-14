@@ -27,6 +27,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
 import { useUserStore } from '@/stores/user'
 import { listScores, type ScoreRecord } from '@/api/score'
 
@@ -40,7 +41,12 @@ const size = ref(10)
 async function fetchList() {
   loading.value = true
   try {
-    const studentId = Number(userStore.username) || 0
+    const studentId = userStore.userId
+    if (!studentId) {
+      ElMessage.error('无法获取学生信息，请重新登录')
+      loading.value = false
+      return
+    }
     const res = await listScores(studentId, page.value, size.value)
     if (res.data.code === 0 && res.data.data) {
       tableData.value = res.data.data.records

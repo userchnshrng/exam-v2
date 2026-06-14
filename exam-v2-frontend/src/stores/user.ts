@@ -29,6 +29,17 @@ function normalizeUser(raw: unknown): LoggedInUser | null {
 
     const tableName = typeof record.tableName === 'string' ? record.tableName : undefined
 
+    // 提取数据库主键 ID（优先级：显式 userId > 各表 ID 字段 > Number(username)）
+    function extractUserId(rec: Record<string, unknown>): number | undefined {
+        if (typeof rec.userId === 'number' && !isNaN(rec.userId)) return rec.userId
+        const idFields = ['adminid', 'teacherid', 'studentid', 'adminId', 'teacherId', 'studentId', 'id']
+        for (const f of idFields) {
+            const v = rec[f]
+            if (typeof v === 'number' && !isNaN(v)) return v
+        }
+        return undefined
+    }
+
     if ('userInfo' in record && record.userInfo && typeof record.userInfo === 'object') {
         const userInfo = record.userInfo as Record<string, unknown>
         const username =
@@ -41,7 +52,8 @@ function normalizeUser(raw: unknown): LoggedInUser | null {
 
         if (!username && !displayName) return null
 
-        return { username: username || displayName, displayName, role, tableName }
+        const userId = extractUserId(record) ?? extractUserId(userInfo) ?? (Number(username) || undefined)
+        return { username: username || displayName, displayName, role, tableName, userId }
     }
 
     const username = firstString(record, ['username', 'account', 'aid', 'tid', 'sid'])
@@ -49,7 +61,8 @@ function normalizeUser(raw: unknown): LoggedInUser | null {
 
     if (!username && !displayName) return null
 
-    return { username: username || displayName, displayName, role, tableName }
+    const userId = extractUserId(record) ?? (Number(username) || undefined)
+    return { username: username || displayName, displayName, role, tableName, userId }
 }
 
 // 初始化时自动读取浏览器的 localStorage，保持状态不随页面刷新而丢失
@@ -71,6 +84,7 @@ export const useUserStore = defineStore('user', {
         role: (state) => state.user?.role || '',
         displayName: (state) => state.user?.displayName || '',
         username: (state) => state.user?.username || '',
+        userId: (state) => state.user?.userId ?? (Number(state.user?.username) || undefined),
         isLoggedIn: (state) => Boolean(state.user) // 转换成布尔值表示是否已登录
     },
     actions: {

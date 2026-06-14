@@ -3,6 +3,17 @@ import { ref, computed } from 'vue'
 import type { ExamQuestion, AnswerItem } from '@/api/examPaper'
 import type { ExamManage } from '@/api/exam'
 
+/**
+ * 生成 answers 映射表的复合键。
+ * 因为 multi_question / fill_question / judge_question 三表各自独立自增，
+ * questionId 会跨题型重复（如选择题 ID=10001 与判断题 ID=10001 同时存在），
+ * 仅用 questionId 做 key 会导致不同题型的答案互相覆盖。
+ * 格式："questionType:questionId"（如 "1:10001"）
+ */
+function answerKey(questionType: number, questionId: number): string {
+    return `${questionType}:${questionId}`
+}
+
 export const useExamStore = defineStore('exam', () => {
     // ---- 考试基本信息 ----
     const examInfo = ref<ExamManage | null>(null)
@@ -10,7 +21,8 @@ export const useExamStore = defineStore('exam', () => {
 
     // ---- 答题状态 ----
     const currentIndex = ref(0)
-    const answers = ref<Record<number, string>>({})   // questionId → answer
+    /** 复合键 "questionType:questionId" → 学生答案 */
+    const answers = ref<Record<string, string>>({})
 
     // ---- 计时 ----
     const totalSeconds = ref(0)
@@ -67,8 +79,20 @@ export const useExamStore = defineStore('exam', () => {
         }
     }
 
-    function saveAnswer(questionId: number, answer: string) {
-        answers.value[questionId] = answer
+    /** 保存答案 — 使用复合键避免跨题型 ID 碰撞 */
+    function saveAnswer(questionType: number, questionId: number, answer: string) {
+        answers.value[answerKey(questionType, questionId)] = answer
+    }
+
+    /** 读取已保存的答案 */
+    function getSavedAnswer(questionType: number, questionId: number): string {
+        return answers.value[answerKey(questionType, questionId)] || ''
+    }
+
+    /** 判断某题是否已作答（供答题卡模板使用） */
+    function isAnswered(questionType: number, questionId: number): boolean {
+        const val = answers.value[answerKey(questionType, questionId)]
+        return val !== undefined && val !== ''
     }
 
     function nextQuestion() {
@@ -89,11 +113,12 @@ export const useExamStore = defineStore('exam', () => {
         }
     }
 
+    /** 收集全部答案，用于提交请求 */
     function collectAnswers(): AnswerItem[] {
         return questions.value.map(q => ({
             questionType: q.questionType,
             questionId: q.questionId,
-            answer: answers.value[q.questionId] || ''
+            answer: getSavedAnswer(q.questionType, q.questionId)
         }))
     }
 
@@ -119,7 +144,7 @@ export const useExamStore = defineStore('exam', () => {
         remainingSeconds, startTime, submitted,
         currentQuestion, totalQuestions, answeredCount, progress,
         isLastQuestion, isFirstQuestion, remainingDisplay, isTimeout,
-        startExam, startTimer, stopTimer, saveAnswer, nextQuestion,
-        prevQuestion, jumpTo, collectAnswers, markSubmitted, resetExam
+        startExam, startTimer, stopTimer, saveAnswer, getSavedAnswer, isAnswered,
+        nextQuestion, prevQuestion, jumpTo, collectAnswers, markSubmitted, resetExam
     }
 })

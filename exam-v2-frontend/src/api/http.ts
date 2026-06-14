@@ -33,6 +33,11 @@ http.interceptors.response.use(
     (error) => {
         if (error.response) {
             const status = error.response.status
+            const body = error.response.data
+            // 尝试从后端响应体中提取业务错误消息，注入到 error 对象供调用方使用
+            if (body && typeof body === 'object' && body.message) {
+                error._serverMessage = body.message
+            }
             const messages: Record<number, string> = {
                 400: '请求参数有误，请检查输入内容',
                 401: '请先登录',
@@ -40,7 +45,10 @@ http.interceptors.response.use(
                 404: '请求的数据不存在',
                 500: '服务器繁忙，请稍后再试',
             }
-            ElMessage.error(messages[status] || `请求失败 (${status})`)
+            // 如果后端返回了具体原因，拼接显示
+            const prefix = messages[status] || `请求失败 (${status})`
+            const suffix = error._serverMessage ? ` — ${error._serverMessage}` : ''
+            ElMessage.error(prefix + suffix)
         } else if (error.code === 'ECONNABORTED') {
             ElMessage.error('请求超时，请检查网络连接')
         } else {

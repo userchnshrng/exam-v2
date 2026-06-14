@@ -7,4 +7,5 @@ export interface LoggedInUser {
   displayName: string    // 显示的真实姓名
   role: UserRole         // 权限角色
   tableName?: string     // 对应的旧数据库表名（保留旧业务思路）
+  userId?: number        // 数据库主键 ID（studentId / teacherId / adminId），用于提交试卷等操作
 }

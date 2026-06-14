@@ -21,21 +21,24 @@ export const demoAccounts: Array<LoggedInUser & { password: string }> = [
     password: '123456',
     displayName: '系统管理员',
     role: 'ADMIN',
-    tableName: 'adminuser'
+    tableName: 'adminuser',
+    userId: 9527
   },
   {
     username: '20081001',
     password: '123456',
     displayName: '张授课老师',
     role: 'TEACHER',
-    tableName: 'teacher'
+    tableName: 'teacher',
+    userId: 20081001
   },
   {
     username: '20154084',
     password: '123456',
     displayName: '李演示学生',
     role: 'STUDENT',
-    tableName: 'student'
+    tableName: 'student',
+    userId: 20154084
   }
 ]
 

@@ -85,7 +85,7 @@
               class="sheet-item"
               :class="{
                 'sheet-item--active': idx === examStore.currentIndex,
-                'sheet-item--answered': examStore.answers[q.questionId]
+                'sheet-item--answered': examStore.isAnswered(q.questionType, q.questionId)
               }"
               @click="examStore.jumpTo(idx)"
           >
@@ -131,15 +131,15 @@ function getOptionText(opt: string): string {
   return ''
 }
 
-// 切换题目时同步回显已有答案
+// 切换题目时同步回显已有答案（使用复合键读取）
 watch(() => examStore.currentIndex, () => {
   const q = examStore.currentQuestion
-  if (q) currentAnswer.value = examStore.answers[q.questionId] || ''
+  if (q) currentAnswer.value = examStore.getSavedAnswer(q.questionType, q.questionId)
 })
 
 function onAnswerChange() {
   const q = examStore.currentQuestion
-  if (q) examStore.saveAnswer(q.questionId, currentAnswer.value)
+  if (q) examStore.saveAnswer(q.questionType, q.questionId, currentAnswer.value)
 }
 
 // 超时自动提交
@@ -172,6 +172,22 @@ async function initExam() {
 
     examStore.startExam(examInfo, qRes.data.data)
     currentAnswer.value = ''
+
+    // ===== 诊断日志：页面加载时输出关键数据摘要（上线前删除） =====
+    console.group('🔍 [考试诊断] 页面初始化')
+    console.log('用户 userId:', userStore.userId, '| username:', userStore.username, '| role:', userStore.role)
+    console.log('考试 examCode:', examCode, '| description:', examInfo.description, '| source:', examInfo.source)
+    console.log('题目数:', qRes.data.data.length)
+    console.log('前 5 题 questionId:', qRes.data.data.slice(0, 5).map((q: any) => ({ id: q.questionId, type: q.questionType, subject: q.subject })))
+    // 检测是否有跨题型重复的 questionId
+    const idMap = new Map<string, number>()
+    qRes.data.data.forEach((q: any) => {
+      const k = `${q.questionType}:${q.questionId}`
+      idMap.set(k, (idMap.get(k) || 0) + 1)
+    })
+    const dupes = [...idMap.entries()].filter(([, c]) => c > 1)
+    if (dupes.length) console.warn('⚠️ 发现同一试卷内 (questionType:questionId) 重复:', dupes)
+    console.groupEnd()
   } finally {
     loading.value = false
   }
@@ -179,6 +195,8 @@ async function initExam() {
 
 async function handleSubmit() {
   if (examStore.submitted) return
+
+  // ========== 阶段 1：确认弹窗 ==========
   try {
     await ElMessageBox.confirm(
       `你已完成 ${examStore.answeredCount}/${examStore.totalQuestions} 题，确定提交？`,
@@ -187,19 +205,83 @@ async function handleSubmit() {
     )
   } catch { return }
 
-  const studentId = Number(userStore.username) || 0
-  const answers = examStore.collectAnswers()
+  // ========== 阶段 2：前端参数合法性自检 ==========
+  const studentId = userStore.userId
+  if (!studentId || typeof studentId !== 'number' || studentId <= 0) {
+    ElMessage.error(
+      `学生 ID 无效（当前值：${userStore.userId}，原始 username：${userStore.username}）。请退出重新登录。`
+    )
+    return
+  }
 
+  if (!examCode || Number.isNaN(examCode) || examCode <= 0) {
+    ElMessage.error(`考试编号无效（当前值：${examCode}），请从考试列表重新进入。`)
+    return
+  }
+
+  if (!examStore.questions.length) {
+    ElMessage.error('题目列表为空，无法提交。请刷新页面重试。')
+    return
+  }
+
+  const answers = examStore.collectAnswers()
+  if (!answers.length) {
+    ElMessage.error('答案收集失败（answers 数组为空），请重试。')
+    return
+  }
+
+  // ========== 阶段 3：调试输出（上线前删除） ==========
+  const payload = { examCode, studentId, answers }
+  console.group('📦 [交卷调试] 请求 Payload')
+  console.log('URL:', `/api/paper/${examCode}/submit`)
+  console.log('Body:', JSON.stringify(payload, null, 2))
+  console.table(payload.answers.slice(0, 10).map(a => ({
+    questionType: a.questionType,
+    questionId: a.questionId,
+    answer: a.answer || '(空)'
+  })))
+  console.log('用户信息:', {
+    rawUsername: userStore.username,
+    userId: userStore.userId,
+    role: userStore.role,
+    displayName: userStore.displayName,
+    localStorageUser: localStorage.getItem('exam-v2-user')
+  })
+  console.log('考试信息:', {
+    examCode,
+    totalQuestions: examStore.totalQuestions,
+    answeredCount: examStore.answeredCount
+  })
+  console.groupEnd()
+
+  // ========== 阶段 4：发送请求 ==========
   try {
     const res = await submitExam(examCode, { examCode, studentId, answers })
     examStore.markSubmitted()
     if (res.data.code === 0 && res.data.data) {
       const result = res.data.data
       ElMessage.success(`交卷成功！得分：${result.totalScore} 分（${result.correctCount}/${result.totalCount}）`)
+    } else {
+      // 后端返回了 200 但业务 code ≠ 0
+      ElMessage.warning(res.data.message || '提交结果异常')
     }
     router.replace(`/student/score-query`)
-  } catch {
-    ElMessage.error('提交失败，请重试')
+  } catch (err: any) {
+    // 分层提取错误原因，取代原来的笼统 "提交失败"
+    let detail = ''
+    if (err?.response?.data) {
+      // 后端通过 GlobalExceptionHandler 返回的 JSON 错误体
+      const body = err.response.data
+      detail = body.message || body.msg || JSON.stringify(body)
+    } else if (err?.response?.status) {
+      detail = `HTTP ${err.response.status}（无响应体）`
+    } else if (err?.message) {
+      detail = err.message
+    } else {
+      detail = '未知网络错误'
+    }
+    console.error('❌ 交卷失败详情:', detail, err)
+    ElMessage.error(`提交失败：${detail}`)
   }
 }
 
