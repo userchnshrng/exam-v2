@@ -1,8 +1,8 @@
 <template>
   <DashboardLayout
-    role="TEACHER"
-    title="教师后台"
-    subtitle="考试、题库、学生和成绩的日常管理入口"
+      role="TEACHER"
+      title="教师教学后台"
+      subtitle="在线考务发布、核心题库维护及智能班级成绩册"
   >
     <router-view />
   </DashboardLayout>

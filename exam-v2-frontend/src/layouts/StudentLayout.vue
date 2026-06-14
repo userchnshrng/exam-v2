@@ -1,8 +1,8 @@
 <template>
   <DashboardLayout
-    role="STUDENT"
-    title="学生后台"
-    subtitle="考试、成绩和消息的统一入口"
+      role="STUDENT"
+      title="学生学业工作台"
+      subtitle="在线实时考场、历次考试成绩单及消息中心入口"
   >
     <router-view />
   </DashboardLayout>

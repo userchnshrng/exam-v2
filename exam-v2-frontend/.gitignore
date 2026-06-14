@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Vite compiled output (should never exist in src)
+src/**/*.js
+src/**/*.js.map
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -1,12 +1,14 @@
 import type { UserRole } from '@/types/user'
 
+// 定义单个菜单项的结构
 export interface DashboardMenuItem {
-  key: string
-  label: string
-  path?: string
-  action?: 'logout'
+  key: string       // 唯一标识，与菜单激活状态绑定
+  label: string     // 菜单中显示的文字
+  path?: string     // 点击时跳转的路由路径
+  action?: 'logout' // 触发的特殊动作，例如退出登录
 }
 
+// 为三种不同的角色配置独立完整的菜单
 export const dashboardMenus: Record<UserRole, DashboardMenuItem[]> = {
   ADMIN: [
     { key: '/admin/home', label: '首页', path: '/admin/home' },

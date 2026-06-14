@@ -19,6 +19,7 @@ function firstString(record: Record<string, unknown>, keys: string[]) {
     return ''
 }
 
+// 标准化从本地存储或接口返回的数据，防止脏数据注入
 function normalizeUser(raw: unknown): LoggedInUser | null {
     if (!raw || typeof raw !== 'object') return null
 
@@ -40,12 +41,7 @@ function normalizeUser(raw: unknown): LoggedInUser | null {
 
         if (!username && !displayName) return null
 
-        return {
-            username: username || displayName,
-            displayName,
-            role,
-            tableName
-        }
+        return { username: username || displayName, displayName, role, tableName }
     }
 
     const username = firstString(record, ['username', 'account', 'aid', 'tid', 'sid'])
@@ -53,18 +49,13 @@ function normalizeUser(raw: unknown): LoggedInUser | null {
 
     if (!username && !displayName) return null
 
-    return {
-        username: username || displayName,
-        displayName,
-        role,
-        tableName
-    }
+    return { username: username || displayName, displayName, role, tableName }
 }
 
+// 初始化时自动读取浏览器的 localStorage，保持状态不随页面刷新而丢失
 function readUser(): LoggedInUser | null {
     const raw = localStorage.getItem(storageKey)
     if (!raw) return null
-
     try {
         return normalizeUser(JSON.parse(raw))
     } catch {
@@ -80,13 +71,15 @@ export const useUserStore = defineStore('user', {
         role: (state) => state.user?.role || '',
         displayName: (state) => state.user?.displayName || '',
         username: (state) => state.user?.username || '',
-        isLoggedIn: (state) => Boolean(state.user)
+        isLoggedIn: (state) => Boolean(state.user) // 转换成布尔值表示是否已登录
     },
     actions: {
+        // 设置并保存用户状态
         setUser(user: LoggedInUser) {
             this.user = user
             localStorage.setItem(storageKey, JSON.stringify(user))
         },
+        // 清理用户状态（常用于注销）
         clearUser() {
             this.user = null
             localStorage.removeItem(storageKey)

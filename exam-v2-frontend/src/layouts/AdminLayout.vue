@@ -1,8 +1,8 @@
 <template>
   <DashboardLayout
-    role="ADMIN"
-    title="管理员后台"
-    subtitle="教师、公告和系统基础配置统一在这里管理"
+      role="ADMIN"
+      title="管理员控制台"
+      subtitle="全校级别师资配置、全站公告发布与系统参数运维"
   >
     <router-view />
   </DashboardLayout>
