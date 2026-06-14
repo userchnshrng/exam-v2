@@ -89,8 +89,8 @@
             :total="total"
             :page-sizes="[5, 10, 20, 50]"
             layout="total, sizes, prev, pager, next, jumper"
-            @size-change="handleSearch"
-            @current-change="handleSearch"
+            @size-change="handleSizeChange"
+            @current-change="handlePageChange"
         />
       </div>
     </el-card>
@@ -235,6 +235,8 @@ async function fetchList() {
 function handleSearch() { searchForm.page = 1; fetchList() }
 function handleReset() { searchForm.keyword = ''; searchForm.page = 1; fetchList() }
 function handleTabChange() { searchForm.page = 1; fetchList() }
+function handlePageChange() { fetchList() }
+function handleSizeChange() { searchForm.page = 1; fetchList() }
 
 // ---------- Dialog ----------
 const dialogVisible = ref(false)

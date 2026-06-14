@@ -96,18 +96,77 @@ async function loadExamComparison() {
     const res = await getExamComparison()
     if (res.data.code === 0) {
       examComparison.value = res.data.data || []
+
+      // ===== 诊断日志：确认后端返回的 examName 字段（上线前删除） =====
+      console.group('🔍 [统计诊断] 考试对比接口原始数据')
+      console.log('完整响应 JSON:', JSON.stringify(res.data.data, null, 2))
+      console.table((res.data.data || []).map((r: any) => ({
+        examCode: r.examCode,
+        examName: r.examName,
+        avgScore: r.avgScore,
+        maxScore: r.maxScore,
+        minScore: r.minScore,
+        count: r.count
+      })))
+      console.groupEnd()
+
       if (examComparison.value.length > 0) {
         barOption.value = {
-          tooltip: { trigger: 'axis' },
-          legend: { data: ['平均分', '最高分', '最低分'] },
-          grid: { left: 100, right: 20, bottom: 60 },
-          xAxis: { type: 'category', data: examComparison.value.map(e => e.examName),
-                   axisLabel: { rotate: 30, fontSize: 10 } },
-          yAxis: { type: 'value', max: 100 },
+          tooltip: {
+            trigger: 'axis',
+            axisPointer: { type: 'shadow' }
+          },
+          // 图例放右上角，独立于绘图区，不挤压 grid
+          legend: {
+            data: ['平均分', '最高分', '最低分'],
+            top: 0,
+            right: 0,
+            orient: 'horizontal',
+            textStyle: { fontSize: 12 }
+          },
+          // 用像素值精确控制绘图区四边，top 为图例留空，bottom 容纳旋转标签
+          grid: {
+            left: 40,
+            right: 20,
+            top: 35,
+            bottom: 70
+          },
+          xAxis: {
+            type: 'category',
+            data: examComparison.value.map(e => e.examName),
+            axisLabel: {
+              rotate: 20,
+              fontSize: 11,
+              interval: 0,           // 强制显示所有标签
+              overflow: 'truncate',  // 超长截断
+              width: 80              // 单标签最大宽度
+            },
+            axisTick: { alignWithLabel: true }
+          },
+          yAxis: {
+            type: 'value',
+            max: 100,
+            minInterval: 1
+          },
           series: [
-            { name: '平均分', type: 'bar', data: examComparison.value.map(e => e.avgScore), itemStyle: { color: '#3370ff' } },
-            { name: '最高分', type: 'bar', data: examComparison.value.map(e => e.maxScore), itemStyle: { color: '#00b42a' } },
-            { name: '最低分', type: 'bar', data: examComparison.value.map(e => e.minScore), itemStyle: { color: '#f53f3f' } }
+            {
+              name: '平均分', type: 'bar',
+              data: examComparison.value.map(e => e.avgScore),
+              barMaxWidth: 28,
+              itemStyle: { color: '#3370ff', borderRadius: [4, 4, 0, 0] }
+            },
+            {
+              name: '最高分', type: 'bar',
+              data: examComparison.value.map(e => e.maxScore),
+              barMaxWidth: 28,
+              itemStyle: { color: '#00b42a', borderRadius: [4, 4, 0, 0] }
+            },
+            {
+              name: '最低分', type: 'bar',
+              data: examComparison.value.map(e => e.minScore),
+              barMaxWidth: 28,
+              itemStyle: { color: '#f53f3f', borderRadius: [4, 4, 0, 0] }
+            }
           ]
         }
       }

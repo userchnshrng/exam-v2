@@ -53,37 +53,8 @@ public class StatisticsServiceImpl implements StatisticsService {
 
     @Override
     public List<Map<String, Object>> examScoreComparison() {
-        List<Score> all = scoreMapper.list(null, 0, 10000);
-        // 按 examCode 分组统计
-        Map<Integer, List<Integer>> examScores = new LinkedHashMap<>();
-        for (Score s : all) {
-            if (s.getExamCode() == null || s.getEtScore() == null) continue;
-            examScores.computeIfAbsent(s.getExamCode(), k -> new ArrayList<>()).add(s.getEtScore());
-        }
-
-        List<Map<String, Object>> result = new ArrayList<>();
-        for (Map.Entry<Integer, List<Integer>> entry : examScores.entrySet()) {
-            List<Integer> scores = entry.getValue();
-            double avg = scores.stream().mapToInt(Integer::intValue).average().orElse(0);
-            int max = scores.stream().mapToInt(Integer::intValue).max().orElse(0);
-            int min = scores.stream().mapToInt(Integer::intValue).min().orElse(0);
-
-            Map<String, Object> item = new LinkedHashMap<>();
-            item.put("examCode", entry.getKey());
-            item.put("avgScore", Math.round(avg * 10.0) / 10.0);
-            item.put("maxScore", max);
-            item.put("minScore", min);
-            item.put("count", scores.size());
-            // 尝试从 exam_manage 取名称
-            try {
-                var exam = examMapper.findById(entry.getKey());
-                item.put("examName", exam != null ? exam.getSource() + "-" + exam.getDescription() : "考试" + entry.getKey());
-            } catch (Exception e) {
-                item.put("examName", "考试" + entry.getKey());
-            }
-            result.add(item);
-        }
-        return result;
+        // 直接在 SQL 层 LEFT JOIN exam_manage 完成聚合，无需 Java 侧循环 + N+1 查名称
+        return scoreMapper.examComparison();
     }
 
     @Override
