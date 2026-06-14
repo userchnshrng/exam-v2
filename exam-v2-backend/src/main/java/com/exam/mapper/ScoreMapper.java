@@ -39,15 +39,26 @@ public interface ScoreMapper {
     @Options(useGeneratedKeys = true, keyProperty = "scoreId")
     int insert(Score score);
 
-    /** 各考试平均分/最高分/最低分对比 — 一条 SQL 完成 LEFT JOIN + 聚合 */
+    /**
+     * 各考试平均分/最高分/最低分对比 — 一条 SQL 完成 LEFT JOIN + 聚合。
+     * 三级回退取考试名：
+     *   ① exam_manage 有匹配 → source + description（如"计算机网络 2019年上期期末考试"）
+     *   ② exam_manage 无匹配 → score.subject（如"计算机网络"），附加 examCode 供辨识
+     *   ③ 两者都无 → 仅 examCode 兜底
+     * 用 MAX() 包裹非分组列，兼容 MySQL ONLY_FULL_GROUP_BY 模式。
+     */
     @Select("""
             SELECT
                 s.examCode      AS examCode,
                 CASE
-                    WHEN e.description IS NOT NULL AND e.source IS NOT NULL
-                        THEN CONCAT(e.source, ' ', e.description)
-                    WHEN e.description IS NOT NULL THEN e.description
-                    WHEN e.source IS NOT NULL THEN e.source
+                    WHEN MAX(e.source) IS NOT NULL AND MAX(e.description) IS NOT NULL
+                        THEN CONCAT(MAX(e.source), ' ', MAX(e.description))
+                    WHEN MAX(e.source) IS NOT NULL
+                        THEN MAX(e.source)
+                    WHEN MAX(e.description) IS NOT NULL
+                        THEN MAX(e.description)
+                    WHEN MAX(s.subject) IS NOT NULL AND MAX(s.subject) != ''
+                        THEN CONCAT(MAX(s.subject), ' (考试', s.examCode, ')')
                     ELSE CONCAT('考试', s.examCode)
                 END             AS examName,
                 ROUND(AVG(s.etScore), 1) AS avgScore,
@@ -57,7 +68,7 @@ public interface ScoreMapper {
             FROM score s
             LEFT JOIN exam_manage e ON s.examCode = e.examCode
             WHERE s.etScore IS NOT NULL
-            GROUP BY s.examCode, e.source, e.description
+            GROUP BY s.examCode
             ORDER BY s.examCode
             """)
     List<Map<String, Object>> examComparison();
