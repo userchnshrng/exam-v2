@@ -5,60 +5,70 @@ import AdminLayout from '@/layouts/AdminLayout.vue'
 import TeacherLayout from '@/layouts/TeacherLayout.vue'
 import StudentLayout from '@/layouts/StudentLayout.vue'
 import PlaceholderView from '@/views/dashboard/PlaceholderView.vue'
+import NoticeManageView from '@/views/notice/NoticeManageView.vue'
+import TeacherManageView from '@/views/admin/TeacherManageView.vue'
+import StudentManageView from '@/views/teacher/StudentManageView.vue'
+import ExamManageView from '@/views/teacher/ExamManageView.vue'
+import QuestionManageView from '@/views/teacher/QuestionManageView.vue'
+import MyExamsView from '@/views/student/MyExamsView.vue'
+import ExamDetailView from '@/views/student/ExamDetailView.vue'
+import ExamTakingView from '@/views/student/ExamTakingView.vue'
+import ScoreQueryView from '@/views/student/ScoreQueryView.vue'
+import MessageCenterView from '@/views/student/MessageCenterView.vue'
+import DataImportView from '@/views/admin/DataImportView.vue'
+import DataExportView from '@/views/admin/DataExportView.vue'
+import StatisticsView from '@/views/teacher/StatisticsView.vue'
+import AIChatView from '@/views/common/AIChatView.vue'
 
-// 路由结构规划：通过嵌套路由，将对应的页面分配到专属布局框架中
 const routes = [
-    {
-        path: '/login',
-        name: 'login',
-        component: LoginView
-    },
-    {
-        path: '/',
-        redirect: '/login'
-    },
-    // 1. 管理员后台路由分支
+    { path: '/login', name: 'login', component: LoginView },
+    { path: '/', redirect: '/login' },
+    // 1. 管理员后台
     {
         path: '/admin',
         component: AdminLayout,
         meta: { role: 'ADMIN' },
         children: [
-            { path: 'home', name: 'admin-home', component: PlaceholderView, meta: { title: '管理员首页', description: '全站基础数据、班级及整体运行概览。' } },
-            { path: 'teacher-management', name: 'admin-teachers', component: PlaceholderView, meta: { title: '教师管理', description: '管理学校所有授课教师的账号开设、状态与基础信息。' } },
-            { path: 'notice-management', name: 'admin-notices', component: PlaceholderView, meta: { title: '公告管理', description: '发布全校性质的通知公告、考试合规守则等。' } }
+            { path: 'home', name: 'admin-home', component: PlaceholderView, meta: { title: '管理员首页', description: '全站基础数据概览。' } },
+            { path: 'teacher-management', name: 'admin-teachers', component: TeacherManageView, meta: { title: '教师管理', description: '管理全校授课教师账号。' } },
+            { path: 'notice-management', name: 'admin-notices', component: NoticeManageView, meta: { title: '公告管理', description: '发布全校通知公告。' } },
+            { path: 'data-import', name: 'admin-import', component: DataImportView, meta: { title: '数据导入', description: 'Excel 批量导入学生、题库、考试数据。' } },
+            { path: 'data-export', name: 'admin-export', component: DataExportView, meta: { title: '数据导出', description: '导出学生、教师、成绩、考试数据为 Excel。' } }
         ]
     },
-    // 2. 教师后台路由分支
+    // 2. 教师后台
     {
         path: '/teacher',
         component: TeacherLayout,
         meta: { role: 'TEACHER' },
         children: [
-            { path: 'home', name: 'teacher-home', component: PlaceholderView, meta: { title: '教师首页', description: '日常教学、考务安排与高频工作站入口。' } },
-            { path: 'exam-management', name: 'teacher-exams', component: PlaceholderView, meta: { title: '考试 management', description: '创建在线考试计划、设定考试时长、编排关联试卷。' } },
-            { path: 'question-bank', name: 'teacher-questions', component: PlaceholderView, meta: { title: '题库管理', description: '各学科核心题目的录入、分类标签化维护与批量导入。' } },
-            { path: 'student-management', name: 'teacher-students', component: PlaceholderView, meta: { title: '学生管理', description: '维护当前所授班级、课程的学生白名单与学号校验。' } },
-            { path: 'score-query', name: 'teacher-scores', component: PlaceholderView, meta: { title: '成绩查询', description: '多维度智能统计班级考试得分，提供详尽的答卷错题分析。' } },
-            { path: 'notice-management', name: 'teacher-notices', component: PlaceholderView, meta: { title: '公告管理', description: '发布面向具体所带班级、考场的通知消息。' } }
+            { path: 'home', name: 'teacher-home', component: PlaceholderView, meta: { title: '教师首页', description: '日常教学、考务安排。' } },
+            { path: 'exam-management', name: 'teacher-exams', component: ExamManageView, meta: { title: '考试管理', description: '创建在线考试计划。' } },
+            { path: 'question-bank', name: 'teacher-questions', component: QuestionManageView, meta: { title: '题库管理', description: '选择题、填空、判断题维护。' } },
+            { path: 'student-management', name: 'teacher-students', component: StudentManageView, meta: { title: '学生管理', description: '维护学生白名单与学号。' } },
+            { path: 'statistics', name: 'teacher-statistics', component: StatisticsView, meta: { title: '成绩统计', description: '图表化成绩分布与多维度对比分析。' } },
+            { path: 'notice-management', name: 'teacher-notices', component: NoticeManageView, meta: { title: '公告管理', description: '发布班级考务通知。' } }
         ]
     },
-    // 3. 学生后台路由分支
+    // 3. 学生后台
     {
         path: '/student',
         component: StudentLayout,
         meta: { role: 'STUDENT' },
         children: [
-            { path: 'home', name: 'student-home', component: PlaceholderView, meta: { title: '学生首页', description: '查看今日紧迫考试项目，接收最新发布的考务通知。' } },
-            { path: 'my-exams', name: 'student-exams', component: PlaceholderView, meta: { title: '我的考试', description: '查看进行中、未开始或历史已考科目，直接进入在线考场。' } },
-            { path: 'score-query', name: 'student-scores', component: PlaceholderView, meta: { title: '成绩查询', description: '查阅已批改完成的试卷得分、错题详细解析及教师综合评语。' } },
-            { path: 'message-center', name: 'student-messages', component: PlaceholderView, meta: { title: '消息中心', description: '实时接收考试时间变更通知、成绩发布提醒等各类私信。' } }
+            { path: 'home', name: 'student-home', component: PlaceholderView, meta: { title: '学生首页', description: '查看紧迫考试项目。' } },
+            { path: 'my-exams', name: 'student-exams', component: MyExamsView, meta: { title: '我的考试', description: '可参加考试列表。' } },
+            { path: 'exam-detail/:examCode', name: 'student-exam-detail', component: ExamDetailView, meta: { title: '考试详情', description: '考试说明与须知。' } },
+            { path: 'score-query', name: 'student-scores', component: ScoreQueryView, meta: { title: '成绩查询', description: '历史考试成绩与得分。' } },
+            { path: 'message-center', name: 'student-messages', component: MessageCenterView, meta: { title: '消息中心', description: '通知与留言回复。' } }
         ]
     },
-    // 4. 兜底路由：防止输错网址出现空白
-    {
-        path: '/:pathMatch(.*)*',
-        redirect: '/login'
-    }
+    // 4. 全屏考试
+    { path: '/exam/taking/:examCode', name: 'exam-taking', component: ExamTakingView },
+    // 5. AI 助手（独立页面，所有角色可访问）
+    { path: '/ai-chat', name: 'ai-chat', component: AIChatView },
+    // 6. 兜底
+    { path: '/:pathMatch(.*)*', redirect: '/login' }
 ]
 
 const router = createRouter({
@@ -66,16 +76,11 @@ const router = createRouter({
     routes
 })
 
-// 核心路由守卫逻辑
 router.beforeEach((to) => {
     const userStore = useUserStore()
 
-    // 逻辑 A: 未登录拦截
-    if (to.path !== '/login' && !userStore.isLoggedIn) {
-        return '/login'
-    }
+    if (to.path !== '/login' && !userStore.isLoggedIn) return '/login'
 
-    // 逻辑 B: 已登录防重定向
     if (to.path === '/login' && userStore.isLoggedIn) {
         if (userStore.role === 'ADMIN') return '/admin/home'
         if (userStore.role === 'TEACHER') return '/teacher/home'
@@ -83,16 +88,15 @@ router.beforeEach((to) => {
         return '/login'
     }
 
-    // 逻辑 C: 越权与防跨角色串门拦截
-    // 寻找当前目标路由树上是否绑定了角色限制的要求
     const matchedRoleRoute = to.matched.find(record => record.meta && record.meta.role)
     if (matchedRoleRoute && matchedRoleRoute.meta.role !== userStore.role) {
-        // 如果用户的实际角色不符，强行拉回各自正确的后台首页
         if (userStore.role === 'ADMIN') return '/admin/home'
         if (userStore.role === 'TEACHER') return '/teacher/home'
         if (userStore.role === 'STUDENT') return '/student/home'
         return '/login'
     }
+
+    if (to.path.startsWith('/exam/taking/') && userStore.role !== 'STUDENT') return '/login'
 
     return true
 })

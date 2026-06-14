@@ -1,40 +1,67 @@
 <template>
-  <div class="login-container">
-    <el-card class="login-card" shadow="always">
-      <div class="login-header">
-        <h2>在线考试系统 v2.0</h2>
-        <p>第三阶段 · 独立角色后台壳子测试</p>
+  <div class="login-page">
+    <!-- 左侧品牌区 -->
+    <div class="login-brand">
+      <div class="login-brand__inner">
+        <div class="brand-logo">
+          <span class="brand-icon">📝</span>
+        </div>
+        <h1 class="brand-title">在线考试系统</h1>
+        <p class="brand-subtitle">Online Examination System</p>
+        <div class="brand-features">
+          <div class="feature-item">📋 智能组卷 · 自动判分</div>
+          <div class="feature-item">📊 成绩统计 · 图表分析</div>
+          <div class="feature-item">🤖 AI 助手 · 高效办公</div>
+        </div>
+        <p class="brand-version">v2.0 · 计算机科学与技术 · 毕业设计</p>
       </div>
+    </div>
 
-      <el-form :model="loginForm" label-position="top" @submit.prevent="handleLogin">
-        <el-form-item label="用户名 / 账号">
-          <el-input v-model="loginForm.username" placeholder="请输入任意字符或点击下方测试账号" clearable />
-        </el-form-item>
-        <el-form-item label="安全密码">
-          <el-input v-model="loginForm.password" type="password" placeholder="请输入密码" show-password />
-        </el-form-item>
+    <!-- 右侧登录区 -->
+    <div class="login-form-area">
+      <div class="login-form-card">
+        <h2 class="form-title">欢迎登录</h2>
+        <p class="form-subtitle">请使用您的账号登录系统</p>
 
-        <el-form-item>
-          <el-button type="primary" class="login-submit-btn" :loading="loading" @click="handleLogin">
-            登 录
-          </el-button>
-        </el-form-item>
-      </el-form>
+        <el-form :model="loginForm" @submit.prevent="handleLogin" class="login-form">
+          <el-form-item>
+            <el-input v-model="loginForm.username" placeholder="用户名 / 账号"
+                      :prefix-icon="User" size="large" clearable />
+          </el-form-item>
+          <el-form-item>
+            <el-input v-model="loginForm.password" type="password" placeholder="密码"
+                      :prefix-icon="Lock" size="large" show-password
+                      @keyup.enter="handleLogin" />
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" size="large" class="login-btn" :loading="loading"
+                       @click="handleLogin" round>
+              登 录
+            </el-button>
+          </el-form-item>
+        </el-form>
 
-      <el-divider>点击快速填充演示账号</el-divider>
+        <el-divider>快速选择演示账号</el-divider>
 
-      <div class="demo-accounts">
-        <div
-            v-for="acc in demoAccounts"
-            :key="acc.username"
-            class="demo-account-item"
-            @click="fillDemo(acc.username, acc.password)"
-        >
-          <el-tag size="small" :type="getTagType(acc.role)">{{ roleLabels[acc.role] }}</el-tag>
-          <span class="demo-user">账号: <strong>{{ acc.username }}</strong>密码: {{ acc.password }}</span>
+        <div class="demo-list">
+          <div v-for="acc in demoAccounts" :key="acc.username"
+               class="demo-item" @click="fillDemo(acc.username, acc.password)">
+            <div class="demo-avatar" :style="{ background: getAvatarBg(acc.role) }">
+              {{ getRoleIcon(acc.role) }}
+            </div>
+            <div class="demo-info">
+              <div class="demo-role">
+                <el-tag size="small" :type="getTagType(acc.role)" effect="dark">
+                  {{ roleLabels[acc.role] }}
+                </el-tag>
+              </div>
+              <div class="demo-name">{{ acc.displayName }}</div>
+              <div class="demo-account">账号: {{ acc.username }} / 密码: {{ acc.password }}</div>
+            </div>
+          </div>
         </div>
       </div>
-    </el-card>
+    </div>
   </div>
 </template>
 
@@ -42,126 +69,116 @@
 import { ref, reactive } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { demoAccounts, roleLabels, matchDemoAccount, getHomePath } from '@/constants/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
-
 const loading = ref(false)
-const loginForm = reactive({
-  username: '',
-  password: ''
-})
+const loginForm = reactive({ username: '', password: '' })
 
-// 点击下方演示框自动填充账号，方便你随时测试三大角色的切换效果
 function fillDemo(user: string, pass: string) {
   loginForm.username = user
   loginForm.password = pass
-  ElMessage.info(`已成功填充测试账号数据`)
 }
 
-function getTagType(role: string) {
-  if (role === 'ADMIN') return 'danger'
-  if (role === 'TEACHER') return 'success'
-  return 'primary'
-}
+function getTagType(role: string) { return role === 'ADMIN' ? 'danger' : role === 'TEACHER' ? 'success' : '' }
+function getAvatarBg(role: string) { return role === 'ADMIN' ? '#ef476f' : role === 'TEACHER' ? '#06d6a0' : '#4361ee' }
+function getRoleIcon(role: string) { return role === 'ADMIN' ? '👑' : role === 'TEACHER' ? '🎓' : '📚' }
 
 function handleLogin() {
   if (!loginForm.username || !loginForm.password) {
     ElMessage.warning('请输入账号和密码')
     return
   }
-
   loading.value = true
-
-  // 匹配内置演示名单
   const matched = matchDemoAccount(loginForm.username, loginForm.password)
 
   setTimeout(() => {
     loading.value = false
     if (matched) {
-      // 成功写入 Pinia 状态树及 localStorage
       userStore.setUser({
         username: matched.username,
         displayName: matched.displayName,
         role: matched.role,
         tableName: matched.tableName
       })
-      ElMessage.success(`登录成功！欢迎回来，${matched.displayName}`)
-
-      // 执行登录后的智能化跳转逻辑
-      const targetPath = getHomePath(matched.role)
-      router.push(targetPath)
+      ElMessage.success(`登录成功！欢迎，${matched.displayName}`)
+      router.push(getHomePath(matched.role))
     } else {
-      ElMessage.error('模拟验证失败，请直接点击下方的浅色演示账号填充测试！')
+      ElMessage.error('账号或密码错误，请点击下方演示账号快速登录')
     }
-  }, 600)
+  }, 500)
 }
 </script>
 
 <style scoped>
-.login-container {
-  height: 100vh;
-  width: 100vw;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%); /* 渐变高端质感背景 */
+/* 全屏双栏布局 */
+.login-page {
+  display: flex; height: 100vh; width: 100vw;
+  overflow: hidden;
 }
 
-.login-card {
-  width: 400px;
-  border-radius: 12px;
+/* ===== 左侧品牌区 ===== */
+.login-brand {
+  flex: 1; background: linear-gradient(135deg, #1e293b 0%, #334155 50%, #1a2332 100%);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; overflow: hidden;
 }
-
-.login-header {
-  text-align: center;
-  margin-bottom: 24px;
+.login-brand::before {
+  content: ''; position: absolute; inset: 0;
+  background: radial-gradient(circle at 20% 80%, rgba(67,97,238,0.15) 0%, transparent 50%),
+              radial-gradient(circle at 80% 20%, rgba(72,149,239,0.1) 0%, transparent 50%);
 }
-
-.login-header h2 {
-  color: #1f2f3d;
-  font-size: 22px;
-  margin-bottom: 6px;
+.login-brand__inner {
+  position: relative; z-index: 1; text-align: center; color: #fff;
+  padding: 40px;
 }
+.brand-logo { margin-bottom: 24px; }
+.brand-icon { font-size: 64px; }
+.brand-title { font-size: 32px; font-weight: 700; margin: 0 0 8px; letter-spacing: 2px; }
+.brand-subtitle { font-size: 14px; color: rgba(255,255,255,0.5); margin: 0 0 32px;
+  letter-spacing: 4px; text-transform: uppercase; }
+.brand-features { display: flex; flex-direction: column; gap: 12px; margin-bottom: 40px; }
+.feature-item { font-size: 15px; color: rgba(255,255,255,0.7); }
+.brand-version { font-size: 12px; color: rgba(255,255,255,0.3); margin-top: 24px; }
 
-.login-header p {
-  color: #909399;
-  font-size: 13px;
+/* ===== 右侧登录区 ===== */
+.login-form-area {
+  width: 480px; display: flex; align-items: center; justify-content: center;
+  background: var(--color-bg); padding: 40px;
 }
-
-.login-submit-btn {
-  width: 100%;
-  height: 38px;
-  margin-top: 8px;
+.login-form-card {
+  width: 100%; max-width: 380px;
 }
+.form-title { font-size: 24px; font-weight: 700; color: var(--color-text-title); margin: 0 0 4px; }
+.form-subtitle { font-size: 13px; color: var(--color-text-muted); margin: 0 0 28px; }
+.login-form { margin-bottom: 8px; }
+.login-btn { width: 100%; height: 44px; font-size: 16px; letter-spacing: 4px; }
 
-.demo-accounts {
-  background-color: #f8f9fa;
-  border-radius: 8px;
-  padding: 10px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
+/* ===== 演示账号 ===== */
+.demo-list { display: flex; flex-direction: column; gap: 8px; }
+.demo-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 10px; border-radius: var(--radius-md);
+  border: 1px solid var(--color-border); cursor: pointer;
+  transition: all 0.2s; background: #fff;
 }
-
-.demo-account-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  cursor: pointer;
-  padding: 6px;
-  border-radius: 4px;
-  transition: background 0.2s;
+.demo-item:hover { border-color: var(--color-primary); box-shadow: var(--shadow-sm); transform: translateX(4px); }
+.demo-avatar {
+  width: 40px; height: 40px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
 }
+.demo-info { flex: 1; min-width: 0; }
+.demo-role { margin-bottom: 2px; }
+.demo-name { font-size: 14px; font-weight: 600; color: var(--color-text-title); }
+.demo-account { font-size: 11px; color: var(--color-text-muted); margin-top: 1px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
-.demo-account-item:hover {
-  background-color: #e9ecef;
-}
-
-.demo-user {
-  font-size: 12px;
-  color: #495057;
+@media (max-width: 768px) {
+  .login-brand { display: none; }
+  .login-form-area { width: 100%; }
 }
 </style>
