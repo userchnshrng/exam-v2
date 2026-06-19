@@ -31,14 +31,6 @@ export const demoAccounts: Array<LoggedInUser & { password: string }> = [
     role: 'TEACHER',
     tableName: 'teacher',
     userId: 20081001
-  },
-  {
-    username: '20154084',
-    password: '123456',
-    displayName: '李演示学生',
-    role: 'STUDENT',
-    tableName: 'student',
-    userId: 20154084
   }
 ]
 

@@ -71,7 +71,8 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
-import { demoAccounts, roleLabels, matchDemoAccount, getHomePath } from '@/constants/auth'
+import { login } from '@/api/auth'
+import { demoAccounts, roleLabels, getHomePath } from '@/constants/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -87,29 +88,40 @@ function getTagType(role: string) { return role === 'ADMIN' ? 'danger' : role ==
 function getAvatarBg(role: string) { return role === 'ADMIN' ? '#ef476f' : role === 'TEACHER' ? '#06d6a0' : '#4361ee' }
 function getRoleIcon(role: string) { return role === 'ADMIN' ? '👑' : role === 'TEACHER' ? '🎓' : '📚' }
 
-function handleLogin() {
+async function handleLogin() {
   if (!loginForm.username || !loginForm.password) {
     ElMessage.warning('请输入账号和密码')
     return
   }
   loading.value = true
-  const matched = matchDemoAccount(loginForm.username, loginForm.password)
+  try {
+    const res = await login(loginForm)
+    const body = res.data
 
-  setTimeout(() => {
-    loading.value = false
-    if (matched) {
+    if (body.code === 0) {
+      const { role, tableName, userInfo } = body.data
+      const info = userInfo as Record<string, unknown> || {}
+
+      const username = (info.username || info.account || info.sid || info.tid || info.aid || loginForm.username) as string
+      const displayName = (info.displayName || info.name || info.sname || info.tname || info.aname || username) as string
+
       userStore.setUser({
-        username: matched.username,
-        displayName: matched.displayName,
-        role: matched.role,
-        tableName: matched.tableName
+        username,
+        displayName,
+        role,
+        tableName
       })
-      ElMessage.success(`登录成功！欢迎，${matched.displayName}`)
-      router.push(getHomePath(matched.role))
+
+      ElMessage.success(`登录成功！欢迎，${displayName}`)
+      router.push(getHomePath(role))
     } else {
-      ElMessage.error('账号或密码错误，请点击下方演示账号快速登录')
+      ElMessage.error(body.message || '账号或密码错误')
     }
-  }, 500)
+  } catch {
+    // 网络异常已在 axios 拦截器中提示，此处仅确保 loading 状态复位
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
