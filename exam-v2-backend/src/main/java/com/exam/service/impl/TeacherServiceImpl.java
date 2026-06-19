@@ -35,6 +35,11 @@ public class TeacherServiceImpl implements TeacherService {
     }
 
     @Override
+    public Teacher findByTeacherId(Integer teacherId) {
+        return teacherMapper.findById(teacherId);
+    }
+
+    @Override
     public Teacher create(Teacher teacher) {
         teacher.setRole("1"); // 固定角色为教师
         teacherMapper.insert(teacher);

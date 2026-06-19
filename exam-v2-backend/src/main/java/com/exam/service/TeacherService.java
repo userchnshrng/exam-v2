@@ -9,6 +9,9 @@ public interface TeacherService {
 
     Teacher getById(Integer teacherId);
 
+    /** 按工号查询（公开接口用，不存在返回 null 不抛异常） */
+    Teacher findByTeacherId(Integer teacherId);
+
     Teacher create(Teacher teacher);
 
     Teacher update(Teacher teacher);

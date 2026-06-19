@@ -41,3 +41,10 @@ export function updateTeacher(id: number, data: Teacher) {
 export function deleteTeacher(id: number) {
     return http.delete<ApiResponse<null>>(`/api/teachers/${id}`)
 }
+
+/** 公开接口：按工号查询教师基本信息（登录页演示卡片动态显示用） */
+export function getTeacherPublicInfo(username: string) {
+    return http.get<ApiResponse<{ teacherId: number; teacherName: string }>>('/api/teachers/public/info', {
+        params: { username }
+    })
+}

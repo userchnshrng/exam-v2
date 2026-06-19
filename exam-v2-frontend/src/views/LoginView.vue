@@ -44,7 +44,7 @@
         <el-divider>快速选择演示账号</el-divider>
 
         <div class="demo-list">
-          <div v-for="acc in demoAccounts" :key="acc.username"
+          <div v-for="acc in demoList" :key="acc.username"
                class="demo-item" @click="fillDemo(acc.username, acc.password)">
             <div class="demo-avatar" :style="{ background: getAvatarBg(acc.role) }">
               {{ getRoleIcon(acc.role) }}
@@ -66,18 +66,22 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { login } from '@/api/auth'
+import { getTeacherPublicInfo } from '@/api/teacher'
 import { demoAccounts, roleLabels, getHomePath } from '@/constants/auth'
 
 const router = useRouter()
 const userStore = useUserStore()
 const loading = ref(false)
 const loginForm = reactive({ username: '', password: '' })
+
+// 响应式演示账号列表（教师卡片 displayName 可被 onMounted 中拉取的真实姓名覆盖）
+const demoList = reactive(demoAccounts.map(a => ({ ...a })))
 
 function fillDemo(user: string, pass: string) {
   loginForm.username = user
@@ -87,6 +91,22 @@ function fillDemo(user: string, pass: string) {
 function getTagType(role: string) { return role === 'ADMIN' ? 'danger' : role === 'TEACHER' ? 'success' : '' }
 function getAvatarBg(role: string) { return role === 'ADMIN' ? '#ef476f' : role === 'TEACHER' ? '#06d6a0' : '#4361ee' }
 function getRoleIcon(role: string) { return role === 'ADMIN' ? '👑' : role === 'TEACHER' ? '🎓' : '📚' }
+
+// 页面挂载后拉取教师真实姓名，动态更新演示卡片
+onMounted(async () => {
+  try {
+    const res = await getTeacherPublicInfo('20081001')
+    const body = res.data
+    if (body.code === 0 && body.data?.teacherName) {
+      const teacher = demoList.find(a => a.role === 'TEACHER')
+      if (teacher) {
+        teacher.displayName = body.data.teacherName + '老师'
+      }
+    }
+  } catch {
+    // 接口异常，保持 demoAccounts 默认 displayName
+  }
+})
 
 async function handleLogin() {
   if (!loginForm.username || !loginForm.password) {
