@@ -136,8 +136,8 @@ async function handleLogin() {
       const { role, tableName, userInfo } = body.data
       const info = userInfo as Record<string, unknown> || {}
 
-      const username = (info.username || info.account || info.sid || info.tid || info.aid || loginForm.username) as string
-      const displayName = (info.displayName || info.name || info.sname || info.tname || info.aname || username) as string
+      const username = (info.username || info.account || info.sid || info.tid || info.aid || info.teacherId || info.studentId || loginForm.username) as string
+      const displayName = (info.displayName || info.name || info.sname || info.tname || info.aname || info.teacherName || info.studentName || username) as string
 
       userStore.setUser({
         username,
