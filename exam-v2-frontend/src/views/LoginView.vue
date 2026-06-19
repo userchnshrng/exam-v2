@@ -73,6 +73,7 @@ import { User, Lock } from '@element-plus/icons-vue'
 import { useUserStore } from '@/stores/user'
 import { login } from '@/api/auth'
 import { getTeacherPublicInfo } from '@/api/teacher'
+import { getStudentById } from '@/api/student'
 import { demoAccounts, roleLabels, getHomePath } from '@/constants/auth'
 
 const router = useRouter()
@@ -101,6 +102,19 @@ onMounted(async () => {
       const teacher = demoList.find(a => a.role === 'TEACHER')
       if (teacher) {
         teacher.displayName = body.data.teacherName + '老师'
+      }
+    }
+  } catch {
+    // 接口异常，保持 demoAccounts 默认 displayName
+  }
+
+  try {
+    const res = await getStudentById(20230001)
+    const body = res.data
+    if (body.code === 0 && body.data?.studentName) {
+      const student = demoList.find(a => a.role === 'STUDENT')
+      if (student) {
+        student.displayName = body.data.studentName + '同学'
       }
     }
   } catch {
