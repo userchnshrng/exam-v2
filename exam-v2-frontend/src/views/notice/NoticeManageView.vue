@@ -52,7 +52,7 @@
     </el-card>
 
     <!-- ======== 新增 / 编辑 弹窗 ======== -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="560px" :close-on-click-modal="false">
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="560px" :close-on-click-modal="false" :close-on-press-escape="false">
       <el-form ref="formRef" :model="form" :rules="formRules" label-width="80px">
         <el-form-item label="公告内容" prop="content">
           <el-input v-model="form.content" type="textarea" :rows="5"

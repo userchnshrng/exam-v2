@@ -107,8 +107,7 @@ const roleTagType = computed(() => {
 function handleSelect(key: string) {
   const selected = menus.value.find((item) => item.key === key)
   if (!selected) return
-  if (selected.action === 'logout') { logout(); return }
-  if (selected.path && selected.path !== route.path) {
+  if (selected.path !== route.path) {
     router.push(selected.path)
   }
 }

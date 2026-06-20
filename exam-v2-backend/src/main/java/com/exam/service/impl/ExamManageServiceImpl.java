@@ -4,6 +4,7 @@ import com.exam.common.PageResult;
 import com.exam.entity.ExamManage;
 import com.exam.mapper.ExamManageMapper;
 import com.exam.service.ExamManageService;
+import com.exam.service.PaperService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,9 +13,12 @@ import java.util.List;
 public class ExamManageServiceImpl implements ExamManageService {
 
     private final ExamManageMapper examManageMapper;
+    private final PaperService paperService;
 
-    public ExamManageServiceImpl(ExamManageMapper examManageMapper) {
+    public ExamManageServiceImpl(ExamManageMapper examManageMapper,
+                                  PaperService paperService) {
         this.examManageMapper = examManageMapper;
+        this.paperService = paperService;
     }
 
     @Override
@@ -36,14 +40,18 @@ public class ExamManageServiceImpl implements ExamManageService {
 
     @Override
     public ExamManage create(ExamManage exam) {
+        exam.setSource(trimToNull(exam.getSource()));
         examManageMapper.insert(exam);
+        autoComposeIfNeeded(exam);
         return exam;
     }
 
     @Override
     public ExamManage update(ExamManage exam) {
         getById(exam.getExamCode());
+        exam.setSource(trimToNull(exam.getSource()));
         examManageMapper.update(exam);
+        autoComposeIfNeeded(exam);
         return exam;
     }
 
@@ -51,5 +59,18 @@ public class ExamManageServiceImpl implements ExamManageService {
     public void delete(Integer examCode) {
         getById(examCode);
         examManageMapper.delete(examCode);
+    }
+
+    /** 自动组卷：考试设置 paperId + 课程名时，自动纳入该科目下全部题目 */
+    private void autoComposeIfNeeded(ExamManage exam) {
+        if (exam.getPaperId() != null && exam.getSource() != null && !exam.getSource().isEmpty()) {
+            paperService.autoCompose(exam.getPaperId(), exam.getSource());
+        }
+    }
+
+    private String trimToNull(String s) {
+        if (s == null) return null;
+        String trimmed = s.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 }

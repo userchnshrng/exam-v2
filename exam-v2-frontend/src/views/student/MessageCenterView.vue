@@ -6,7 +6,6 @@
       </div>
 
       <el-table :data="tableData" v-loading="loading" stripe border style="width:100%">
-        <el-table-column prop="id" label="ID" width="70" align="center" />
         <el-table-column prop="title" label="标题" width="200" show-overflow-tooltip />
         <el-table-column prop="content" label="内容" min-width="250" show-overflow-tooltip />
         <el-table-column prop="time" label="时间" width="120" align="center" />
@@ -28,7 +27,7 @@
     </el-card>
 
     <!-- ===== 发布留言弹窗 ===== -->
-    <el-dialog v-model="dialogVisible" title="发布留言" width="500px">
+    <el-dialog v-model="dialogVisible" title="发布留言" width="500px" :close-on-press-escape="false">
       <el-form :model="form" label-width="60px">
         <el-form-item label="标题">
           <el-input v-model="form.title" placeholder="请输入标题" />
@@ -44,7 +43,7 @@
     </el-dialog>
 
     <!-- ===== 查看回复弹窗 ===== -->
-    <el-dialog v-model="replyVisible" title="留言详情与回复" width="560px">
+    <el-dialog v-model="replyVisible" title="留言详情与回复" width="560px" :close-on-press-escape="false">
       <div class="msg-original">
         <strong>{{ currentMsg?.title }}</strong>
         <p>{{ currentMsg?.content }}</p>

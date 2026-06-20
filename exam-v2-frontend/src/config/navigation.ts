@@ -3,8 +3,7 @@ import type { UserRole } from '@/types/user'
 export interface DashboardMenuItem {
   key: string
   label: string
-  path?: string
-  action?: 'logout'
+  path: string
 }
 
 export const dashboardMenus: Record<UserRole, DashboardMenuItem[]> = {
@@ -13,8 +12,7 @@ export const dashboardMenus: Record<UserRole, DashboardMenuItem[]> = {
     { key: '/admin/teacher-management', label: '教师管理', path: '/admin/teacher-management' },
     { key: '/admin/notice-management', label: '公告管理', path: '/admin/notice-management' },
     { key: '/admin/data-import', label: '数据导入', path: '/admin/data-import' },
-    { key: '/admin/data-export', label: '数据导出', path: '/admin/data-export' },
-    { key: 'logout', label: '退出登录', action: 'logout' }
+    { key: '/admin/data-export', label: '数据导出', path: '/admin/data-export' }
   ],
   TEACHER: [
     { key: '/teacher/home', label: '首页', path: '/teacher/home' },
@@ -23,14 +21,12 @@ export const dashboardMenus: Record<UserRole, DashboardMenuItem[]> = {
     { key: '/teacher/question-import', label: '题目导入', path: '/teacher/question-import' },
     { key: '/teacher/student-management', label: '学生管理', path: '/teacher/student-management' },
     { key: '/teacher/statistics', label: '成绩统计', path: '/teacher/statistics' },
-    { key: '/teacher/notice-management', label: '公告管理', path: '/teacher/notice-management' },
-    { key: 'logout', label: '退出登录', action: 'logout' }
+    { key: '/teacher/notice-management', label: '公告管理', path: '/teacher/notice-management' }
   ],
   STUDENT: [
     { key: '/student/home', label: '首页', path: '/student/home' },
     { key: '/student/my-exams', label: '我的考试', path: '/student/my-exams' },
     { key: '/student/score-query', label: '成绩查询', path: '/student/score-query' },
-    { key: '/student/message-center', label: '消息中心', path: '/student/message-center' },
-    { key: 'logout', label: '退出登录', action: 'logout' }
+    { key: '/student/message-center', label: '消息中心', path: '/student/message-center' }
   ]
 }

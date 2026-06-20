@@ -2,8 +2,6 @@
   <div class="score-query">
     <el-card shadow="never" class="table-card">
       <el-table :data="tableData" v-loading="loading" stripe border style="width:100%">
-        <el-table-column prop="scoreId" label="ID" width="70" align="center" />
-        <el-table-column prop="examCode" label="考试编号" width="100" align="center" />
         <el-table-column prop="subject" label="科目" width="140" />
         <el-table-column prop="etScore" label="得分" width="80" align="center">
           <template #default="{ row }">

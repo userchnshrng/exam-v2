@@ -165,7 +165,11 @@ async function initExam() {
     // 获取题目
     const qRes = await getExamQuestions(examCode)
     if (qRes.data.code !== 0 || !qRes.data.data || !qRes.data.data.length) {
-      ElMessage.error('该考试暂无题目')
+      if (qRes.data.code !== 0) {
+        ElMessage.error(qRes.data.message || '获取题目失败')
+      } else {
+        ElMessage.error('该考试暂无题目，请联系教师确认试卷已组卷')
+      }
       router.replace('/student/my-exams')
       return
     }

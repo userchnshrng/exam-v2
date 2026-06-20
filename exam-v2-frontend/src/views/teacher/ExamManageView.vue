@@ -28,8 +28,9 @@
         <el-table-column prop="examDate" label="考试日期" width="110" align="center" />
         <el-table-column prop="totalTime" label="时长(分)" width="80" align="center" />
         <el-table-column prop="type" label="类型" width="90" align="center" />
-        <el-table-column label="操作" width="160" align="center" fixed="right">
+        <el-table-column label="操作" width="210" align="center" fixed="right">
           <template #default="{ row }">
+            <el-button link type="success" size="small" @click="openCompose(row)">组卷</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-popconfirm title="确定删除该考试？" @confirm="handleDelete(row.examCode)">
               <template #reference>
@@ -54,7 +55,7 @@
     </el-card>
 
     <!-- ======== 新增 / 编辑 弹窗 ======== -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="680px" :close-on-click-modal="false">
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="680px" :close-on-click-modal="false" :close-on-press-escape="false">
       <el-form ref="formRef" :model="form" :rules="formRules" label-width="80px">
         <el-row :gutter="16">
           <el-col :span="12">
@@ -132,6 +133,84 @@
         <el-button type="primary" :loading="submitting" @click="handleSubmit">确定</el-button>
       </template>
     </el-dialog>
+
+    <!-- ======== 组卷弹窗 ======== -->
+    <el-dialog v-model="composeVisible" width="780px" :close-on-click-modal="false" :close-on-press-escape="false"
+               @opened="loadComposeData" class="compose-dialog">
+      <template #header>
+        <div class="compose-header">
+          <div class="compose-header__left">
+            <span class="compose-header__title">试卷组卷</span>
+            <el-tag type="warning" effect="plain" round>{{ composeExam?.source || '未设置课程' }}</el-tag>
+            <el-tag v-if="composeExam?.paperId" type="info" effect="plain" round>试卷号 {{ composeExam.paperId }}</el-tag>
+          </div>
+          <el-button v-if="composeExam?.paperId" type="primary" plain size="small"
+                     :loading="autoComposing" @click="handleAutoCompose">
+            一键组卷
+          </el-button>
+        </div>
+      </template>
+
+      <div v-if="!composeExam?.paperId" class="compose-no-paper">
+        <el-result icon="warning" title="尚未设置试卷编号" sub-title="请先编辑该考试，填写试卷编号后再进行组卷">
+          <template #extra>
+            <el-button type="primary" @click="composeVisible = false">关闭</el-button>
+          </template>
+        </el-result>
+      </div>
+      <template v-else>
+        <el-tabs v-model="composeTab" class="compose-tabs">
+          <el-tab-pane name="1">
+            <template #label>
+              <span>选择题</span>
+              <el-badge :value="composeByType(1).length" :type="composeByType(1).length ? 'primary' : 'info'" class="compose-badge" />
+            </template>
+          </el-tab-pane>
+          <el-tab-pane name="2">
+            <template #label>
+              <span>填空题</span>
+              <el-badge :value="composeByType(2).length" :type="composeByType(2).length ? 'success' : 'info'" class="compose-badge" />
+            </template>
+          </el-tab-pane>
+          <el-tab-pane name="3">
+            <template #label>
+              <span>判断题</span>
+              <el-badge :value="composeByType(3).length" :type="composeByType(3).length ? 'warning' : 'info'" class="compose-badge" />
+            </template>
+          </el-tab-pane>
+        </el-tabs>
+
+        <div class="compose-toolbar">
+          <span class="compose-hint">
+            已选 <strong>{{ checkedCount(Number(composeTab)) }}</strong> / {{ composeByType(Number(composeTab)).length }} 题
+            · 科目匹配「<em>{{ composeExam?.source }}</em>」
+          </span>
+        </div>
+
+        <div v-if="composeByType(Number(composeTab)).length === 0" class="compose-empty-state">
+          <el-empty description="该科目下暂无此类型题目" :image-size="70">
+            <template #extra>
+              <span class="empty-hint">请在「题库管理」或「题目导入」中先添加「{{ composeExam?.source }}」科目的{{ tabLabel(composeTab) }}</span>
+            </template>
+          </el-empty>
+        </div>
+        <div v-else class="compose-list">
+          <div v-for="q in composeByType(Number(composeTab))" :key="compKey(q)" class="compose-item"
+               :class="{ 'compose-item--checked': isComposeChecked(q) }"
+               @click="onToggle(q, !isComposeChecked(q))">
+            <div class="compose-item__left">
+              <el-checkbox :model-value="isComposeChecked(q)" @change="(checked: boolean) => onToggle(q, checked)" @click.stop />
+              <span class="compose-item__question">{{ q.question }}</span>
+            </div>
+            <div class="compose-item__right">
+              <el-tag size="small" effect="plain" round>{{ q.section || '未分类' }}</el-tag>
+              <span class="compose-item__score">{{ q.score }}分</span>
+              <span class="compose-item__level">{{ q.level || '-' }}</span>
+            </div>
+          </div>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -140,6 +219,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { listExams, createExam, updateExam, deleteExam, type ExamManage } from '@/api/exam'
+import { getComposeData, addQuestionToPaper, removeQuestionFromPaper, autoCompose, type ComposeQuestion } from '@/api/examPaper'
 
 const searchForm = reactive({ keyword: '', page: 1, size: 10 })
 
@@ -229,6 +309,85 @@ async function handleDelete(id: number) {
   }
 }
 
+// ---------- 组卷 ----------
+const composeVisible = ref(false)
+const composeExam = ref<ExamManage | null>(null)
+const composeTab = ref('1')
+const composeData = ref<ComposeQuestion[]>([])
+const composeChecked = ref<string[]>([])
+const composeLoading = ref(false)
+const autoComposing = ref(false)
+
+function compKey(q: ComposeQuestion) { return `${q.questionType}_${q.questionId}` }
+
+function isComposeChecked(q: ComposeQuestion) { return composeChecked.value.includes(compKey(q)) }
+
+function composeByType(type: number) { return composeData.value.filter(q => q.questionType === type) }
+
+function checkedCount(type: number) { return composeByType(type).filter(q => isComposeChecked(q)).length }
+
+function typeLabel(type: number) { return type === 1 ? '选择' : type === 2 ? '填空' : '判断' }
+
+function tabLabel(tab: string) { return tab === '1' ? '选择题' : tab === '2' ? '填空题' : '判断题' }
+
+function openCompose(row: ExamManage) {
+  composeExam.value = row
+  composeTab.value = '1'
+  composeChecked.value = []
+  composeData.value = []
+  composeVisible.value = true
+}
+
+async function loadComposeData() {
+  if (!composeExam.value?.paperId || !composeExam.value?.source) return
+  composeLoading.value = true
+  try {
+    const res = await getComposeData(composeExam.value.paperId, composeExam.value.source)
+    if (res.data.code === 0) {
+      composeData.value = res.data.data || []
+      composeChecked.value = res.data.data?.filter(q => q.inPaper).map(compKey) || []
+    } else {
+      ElMessage.error(res.data.message || '获取组卷数据失败')
+    }
+  } catch {
+    ElMessage.error('获取组卷数据失败，请检查网络连接')
+  } finally {
+    composeLoading.value = false
+  }
+}
+
+async function handleAutoCompose() {
+  if (!composeExam.value?.paperId || !composeExam.value?.source) return
+  autoComposing.value = true
+  try {
+    const res = await autoCompose(composeExam.value.paperId, composeExam.value.source)
+    if (res.data.code === 0) {
+      ElMessage.success(res.data.data?.message || '组卷完成')
+    }
+    await loadComposeData()
+  } catch {
+    ElMessage.error('自动组卷失败')
+  } finally {
+    autoComposing.value = false
+  }
+}
+
+async function onToggle(q: ComposeQuestion, checked: boolean) {
+  if (!composeExam.value?.paperId) return
+  try {
+    if (checked) {
+      await addQuestionToPaper(composeExam.value.paperId, q.questionType, q.questionId)
+      composeChecked.value.push(compKey(q))
+    } else {
+      await removeQuestionFromPaper(composeExam.value.paperId, q.questionType, q.questionId)
+      composeChecked.value = composeChecked.value.filter(k => k !== compKey(q))
+    }
+  } catch {
+    ElMessage.error('操作失败')
+    loadComposeData()
+  }
+}
+
 onMounted(() => fetchList())
 </script>
 
@@ -242,4 +401,70 @@ onMounted(() => fetchList())
 .search-card, .table-card { border-radius: 8px; }
 .table-toolbar { margin-bottom: 16px; }
 .table-pagination { display: flex; justify-content: flex-end; margin-top: 16px; }
+
+/* ---- 组卷弹窗 ---- */
+.compose-header {
+  display: flex; align-items: center; justify-content: space-between; width: 100%;
+}
+.compose-header__left {
+  display: flex; align-items: center; gap: 10px;
+}
+.compose-header__title {
+  font-size: 17px; font-weight: 600; color: #1d2129;
+}
+.compose-no-paper {
+  padding: 20px 0;
+}
+.compose-tabs {
+  margin-bottom: 0;
+}
+.compose-badge {
+  margin-left: 6px;
+}
+.compose-toolbar {
+  padding: 10px 0 6px; border-bottom: 1px solid #f0f1f3; margin-bottom: 10px;
+}
+.compose-hint {
+  font-size: 13px; color: #86909c;
+}
+.compose-hint em {
+  font-style: normal; color: #3370ff;
+}
+.compose-empty-state {
+  padding: 30px 0;
+}
+.empty-hint {
+  font-size: 13px; color: #86909c; display: block; margin-top: 4px;
+}
+.compose-list {
+  display: flex; flex-direction: column; gap: 6px;
+  max-height: 380px; overflow-y: auto; padding-right: 4px;
+}
+.compose-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 10px 14px; border: 1px solid #e5e6eb; border-radius: 8px;
+  background: #fff; transition: all .15s; cursor: pointer;
+}
+.compose-item:hover {
+  border-color: #b4c8f0; background: #fafbff;
+}
+.compose-item--checked {
+  border-color: #3370ff; background: #f2f7ff;
+}
+.compose-item__left {
+  display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0;
+}
+.compose-item__question {
+  font-size: 14px; color: #1d2129; line-height: 1.5;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.compose-item__right {
+  display: flex; align-items: center; gap: 10px; flex-shrink: 0; margin-left: 16px;
+}
+.compose-item__score {
+  font-size: 13px; color: #4e5969; font-weight: 500; min-width: 32px; text-align: right;
+}
+.compose-item__level {
+  font-size: 12px; color: #c9cdd4; min-width: 28px; text-align: right;
+}
 </style>

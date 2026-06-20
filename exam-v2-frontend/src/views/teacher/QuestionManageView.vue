@@ -96,7 +96,7 @@
     </el-card>
 
     <!-- ======== 新增 / 编辑 弹窗 ======== -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="660px" :close-on-click-modal="false">
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="660px" :close-on-click-modal="false" :close-on-press-escape="false" destroy-on-close>
       <el-form ref="formRef" :model="form" :rules="formRules" label-width="80px">
         <!-- 公共字段 -->
         <el-row :gutter="16">
@@ -105,14 +105,27 @@
               <el-input v-model="form.subject" placeholder="如：计算机网络" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+          <el-col :span="12">
             <el-form-item label="分值" prop="score">
-              <el-input-number v-model="form.score" :min="1" :max="99" style="width:100%" />
+              <el-input-number v-model="form.score" :min="1" :max="99" :step="1" controls-position="right" style="width:100%" />
             </el-form-item>
           </el-col>
-          <el-col :span="6">
+        </el-row>
+        <el-row :gutter="16">
+          <el-col :span="12">
+            <el-form-item label="章节" prop="section">
+              <el-input v-model="form.section" placeholder="如：应用层" />
+            </el-form-item>
+          </el-col>
+          <el-col :span="12">
             <el-form-item label="难度" prop="level">
-              <el-input v-model="form.level" placeholder="1-5" />
+              <el-select v-model="form.level" placeholder="请选择难度" style="width:100%">
+                <el-option label="1 — 非常简单" value="1" />
+                <el-option label="2 — 简单" value="2" />
+                <el-option label="3 — 中等" value="3" />
+                <el-option label="4 — 较难" value="4" />
+                <el-option label="5 — 困难" value="5" />
+              </el-select>
             </el-form-item>
           </el-col>
         </el-row>
@@ -170,14 +183,7 @@
         </template>
 
         <!-- 公共底部字段 -->
-        <el-row :gutter="16">
-          <el-col :span="12">
-            <el-form-item label="章节">
-              <el-input v-model="form.section" placeholder="如：应用层" />
-            </el-form-item>
-          </el-col>
-        </el-row>
-        <el-form-item label="解析">
+        <el-form-item label="解析" prop="analysis">
           <el-input v-model="form.analysis" type="textarea" :rows="2" placeholder="题目解析（可选）" maxlength="255" />
         </el-form-item>
       </el-form>

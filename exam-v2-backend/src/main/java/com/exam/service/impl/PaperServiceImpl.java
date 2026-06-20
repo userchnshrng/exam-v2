@@ -119,6 +119,80 @@ public class PaperServiceImpl implements PaperService {
     }
 
     @Override
+    public List<Map<String, Object>> getComposeData(Integer paperId, String subject) {
+        subject = subject != null ? subject.trim() : "";
+        List<Map<String, Object>> result = new ArrayList<>();
+        // 已组卷的题目 ID 集合
+        Set<String> composed = new HashSet<>();
+        if (paperId != null) {
+            for (Map<String, Object> m : paperManageMapper.listByPaperId(paperId)) {
+                composed.add(m.get("questionType") + "_" + m.get("questionId"));
+            }
+        }
+        // 选择题
+        for (Map<String, Object> q : paperManageMapper.listMultiBySubject(subject)) {
+            Integer qid = (Integer) q.get("questionId");
+            q.put("questionType", 1);
+            q.put("inPaper", composed.contains("1_" + qid));
+            result.add(q);
+        }
+        // 填空题
+        for (Map<String, Object> q : paperManageMapper.listFillBySubject(subject)) {
+            Integer qid = (Integer) q.get("questionId");
+            q.put("questionType", 2);
+            q.put("inPaper", composed.contains("2_" + qid));
+            result.add(q);
+        }
+        // 判断题
+        for (Map<String, Object> q : paperManageMapper.listJudgeBySubject(subject)) {
+            Integer qid = (Integer) q.get("questionId");
+            q.put("questionType", 3);
+            q.put("inPaper", composed.contains("3_" + qid));
+            result.add(q);
+        }
+        return result;
+    }
+
+    @Override
+    public void addQuestionToPaper(Integer paperId, Integer questionType, Integer questionId) {
+        paperManageMapper.insertMapping(paperId, questionType, questionId);
+    }
+
+    @Override
+    public void removeQuestionFromPaper(Integer paperId, Integer questionType, Integer questionId) {
+        paperManageMapper.deleteMapping(paperId, questionType, questionId);
+    }
+
+    @Override
+    public int autoCompose(Integer paperId, String subject) {
+        subject = subject != null ? subject.trim() : "";
+        Set<String> existing = new HashSet<>();
+        for (Map<String, Object> m : paperManageMapper.listByPaperId(paperId)) {
+            existing.add(m.get("questionType") + "_" + m.get("questionId"));
+        }
+        int added = 0;
+        for (Map<String, Object> q : paperManageMapper.listMultiBySubject(subject)) {
+            if (existing.add("1_" + q.get("questionId"))) {
+                paperManageMapper.insertMapping(paperId, 1, (Integer) q.get("questionId"));
+                added++;
+            }
+        }
+        for (Map<String, Object> q : paperManageMapper.listFillBySubject(subject)) {
+            if (existing.add("2_" + q.get("questionId"))) {
+                paperManageMapper.insertMapping(paperId, 2, (Integer) q.get("questionId"));
+                added++;
+            }
+        }
+        for (Map<String, Object> q : paperManageMapper.listJudgeBySubject(subject)) {
+            if (existing.add("3_" + q.get("questionId"))) {
+                paperManageMapper.insertMapping(paperId, 3, (Integer) q.get("questionId"));
+                added++;
+            }
+        }
+        return added;
+    }
+
+    @Override
     public List<SubmitResultVO.AnswerResult> getAnswerDetails(Integer examCode, Integer studentId) {
         List<ExamAnswer> answers = examAnswerMapper.findByExamAndStudent(examCode, studentId);
         List<SubmitResultVO.AnswerResult> results = new ArrayList<>();

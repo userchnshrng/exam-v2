@@ -44,6 +44,7 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     public MultiQuestion createMulti(MultiQuestion q) {
+        q.setSubject(trimToNull(q.getSubject()));
         multiMapper.insert(q);
         return q;
     }
@@ -51,6 +52,7 @@ public class QuestionServiceImpl implements QuestionService {
     @Override
     public MultiQuestion updateMulti(MultiQuestion q) {
         getMultiById(q.getQuestionId());
+        q.setSubject(trimToNull(q.getSubject()));
         multiMapper.update(q);
         return q;
     }
@@ -78,6 +80,7 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     public FillQuestion createFill(FillQuestion q) {
+        q.setSubject(trimToNull(q.getSubject()));
         fillMapper.insert(q);
         return q;
     }
@@ -85,6 +88,7 @@ public class QuestionServiceImpl implements QuestionService {
     @Override
     public FillQuestion updateFill(FillQuestion q) {
         getFillById(q.getQuestionId());
+        q.setSubject(trimToNull(q.getSubject()));
         fillMapper.update(q);
         return q;
     }
@@ -112,6 +116,7 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     public JudgeQuestion createJudge(JudgeQuestion q) {
+        q.setSubject(trimToNull(q.getSubject()));
         judgeMapper.insert(q);
         return q;
     }
@@ -119,8 +124,16 @@ public class QuestionServiceImpl implements QuestionService {
     @Override
     public JudgeQuestion updateJudge(JudgeQuestion q) {
         getJudgeById(q.getQuestionId());
+        q.setSubject(trimToNull(q.getSubject()));
         judgeMapper.update(q);
         return q;
+    }
+
+    // ---- helper ----
+    private String trimToNull(String s) {
+        if (s == null) return null;
+        String trimmed = s.trim();
+        return trimmed.isEmpty() ? null : trimmed;
     }
 
     @Override
