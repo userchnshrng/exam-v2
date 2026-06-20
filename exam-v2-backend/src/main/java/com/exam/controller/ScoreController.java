@@ -47,4 +47,30 @@ public class ScoreController {
         }
         return ApiResponse.success(score);
     }
+
+    /**
+     * 教师更新成绩
+     */
+    @PutMapping("/{id}")
+    public ApiResponse<Void> update(@PathVariable("id") Integer id, @RequestBody Score score) {
+        if (!UserContext.isTeacher()) {
+            throw new RuntimeException("仅教师可修改成绩");
+        }
+        score.setScoreId(id);
+        scoreService.updateScore(score);
+        return ApiResponse.success(null);
+    }
+
+    /**
+     * 教师删除某学生在某场考试的成绩记录
+     */
+    @DeleteMapping("/by-exam/{examCode}/{studentId}")
+    public ApiResponse<Void> deleteByExam(@PathVariable Integer examCode,
+                                          @PathVariable Integer studentId) {
+        if (!UserContext.isTeacher()) {
+            throw new RuntimeException("仅教师可删除成绩");
+        }
+        scoreService.deleteByExamAndStudent(examCode, studentId);
+        return ApiResponse.success(null);
+    }
 }

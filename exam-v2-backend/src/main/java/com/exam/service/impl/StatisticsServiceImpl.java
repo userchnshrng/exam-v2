@@ -65,6 +65,8 @@ public class StatisticsServiceImpl implements StatisticsService {
         List<Map<String, Object>> result = new ArrayList<>();
         for (Map<String, Object> row : rawList) {
             Map<String, Object> item = new LinkedHashMap<>();
+            item.put("scoreId", row.get("scoreId"));
+            item.put("examCode", row.get("examCode"));
             item.put("studentId", row.get("studentId"));
             item.put("studentName", row.get("studentName"));
             item.put("score", row.get("etScore"));

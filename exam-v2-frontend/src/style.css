@@ -61,13 +61,47 @@ html, body, #app {
   border-radius: var(--radius-sm) !important;
   font-weight: 500;
 }
-.el-button--primary {
+/* 实心按钮：排除 link 模式，避免 link 按钮被强制加上蓝底蓝框 */
+.el-button--primary:not(.is-link) {
   background-color: var(--color-primary) !important;
   border-color: var(--color-primary) !important;
 }
-.el-button--primary:hover {
+.el-button--primary:not(.is-link):hover {
   background-color: var(--color-primary-light) !important;
   border-color: var(--color-primary-light) !important;
+}
+
+/* 表格操作列 link 按钮：提升可读性 */
+.el-button.is-link {
+  font-weight: 600;
+}
+.el-button--primary.is-link {
+  color: #2c3cb8 !important;
+}
+.el-button--primary.is-link:hover,
+.el-button--primary.is-link:focus {
+  color: #4361ee !important;
+}
+.el-button--warning.is-link {
+  color: #d97706 !important;
+}
+.el-button--warning.is-link:hover,
+.el-button--warning.is-link:focus {
+  color: #b45309 !important;
+}
+.el-button--danger.is-link {
+  color: #dc2626 !important;
+}
+.el-button--danger.is-link:hover,
+.el-button--danger.is-link:focus {
+  color: #b91c1c !important;
+}
+.el-button--success.is-link {
+  color: #059669 !important;
+}
+.el-button--success.is-link:hover,
+.el-button--success.is-link:focus {
+  color: #047857 !important;
 }
 
 /* 卡片 */

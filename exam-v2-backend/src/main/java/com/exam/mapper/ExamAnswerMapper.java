@@ -16,4 +16,11 @@ public interface ExamAnswerMapper {
     @Select("SELECT * FROM exam_answer WHERE examCode = #{examCode} AND studentId = #{studentId}")
     List<ExamAnswer> findByExamAndStudent(@Param("examCode") Integer examCode,
                                           @Param("studentId") Integer studentId);
+
+    @Delete("DELETE FROM exam_answer WHERE examCode = #{examCode} AND studentId = #{studentId}")
+    int deleteByExamAndStudent(@Param("examCode") Integer examCode,
+                               @Param("studentId") Integer studentId);
+
+    @Update("UPDATE exam_answer SET studentAnswer=#{studentAnswer}, isCorrect=#{isCorrect}, score=#{score} WHERE answerId=#{answerId}")
+    int update(ExamAnswer answer);
 }

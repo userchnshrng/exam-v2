@@ -53,6 +53,13 @@ public interface ScoreMapper {
     @Options(useGeneratedKeys = true, keyProperty = "scoreId")
     int insert(Score score);
 
+    @Delete("DELETE FROM score WHERE examCode = #{examCode} AND studentId = #{studentId}")
+    int deleteByExamAndStudent(@Param("examCode") Integer examCode,
+                               @Param("studentId") Integer studentId);
+
+    @Update("UPDATE score SET etScore=#{etScore}, score=#{score}, ptScore=#{ptScore} WHERE scoreId=#{scoreId}")
+    int update(Score score);
+
     /**
      * 各考试平均分/最高分/最低分对比 — 一条 SQL 完成 LEFT JOIN + 聚合。
      * 三级回退取考试名：

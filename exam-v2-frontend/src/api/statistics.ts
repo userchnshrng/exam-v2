@@ -22,6 +22,8 @@ export interface ExamComparisonItem {
 }
 
 export interface StudentScoreItem {
+    scoreId: number
+    examCode: number
     studentId: number
     studentName: string
     score: number

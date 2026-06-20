@@ -31,4 +31,14 @@ public class ScoreServiceImpl implements ScoreService {
         if (score == null) throw new RuntimeException("成绩不存在: " + scoreId);
         return score;
     }
+
+    @Override
+    public int deleteByExamAndStudent(Integer examCode, Integer studentId) {
+        return scoreMapper.deleteByExamAndStudent(examCode, studentId);
+    }
+
+    @Override
+    public int updateScore(Score score) {
+        return scoreMapper.update(score);
+    }
 }
