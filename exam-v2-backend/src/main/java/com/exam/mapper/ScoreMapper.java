@@ -38,6 +38,16 @@ public interface ScoreMapper {
     @Select("SELECT * FROM score WHERE examCode = #{examCode}")
     List<Score> listByExamCode(@Param("examCode") Integer examCode);
 
+    /** 按考试编号查学生成绩 — 联表 student 带出姓名 */
+    @Select("""
+            SELECT s.*, st.studentName
+            FROM score s
+            LEFT JOIN student st ON s.studentId = st.studentId
+            WHERE s.examCode = #{examCode}
+            ORDER BY s.etScore DESC
+            """)
+    List<Map<String, Object>> listStudentScoresByExamCode(@Param("examCode") Integer examCode);
+
     @Insert("INSERT INTO score (examCode, studentId, subject, etScore, answerDate) " +
             "VALUES (#{examCode}, #{studentId}, #{subject}, #{etScore}, #{answerDate})")
     @Options(useGeneratedKeys = true, keyProperty = "scoreId")

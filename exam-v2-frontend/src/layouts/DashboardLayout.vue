@@ -54,9 +54,6 @@
         </div>
 
         <div class="topbar-right">
-          <el-button class="topbar-ai-btn" circle @click="router.push('/ai-chat')" title="AI 助手">
-            🤖
-          </el-button>
           <el-tag effect="plain" :type="roleTagType" size="small">{{ roleLabel }}</el-tag>
           <span class="topbar-user-name">{{ displayName }}</span>
           <el-button size="small" text @click="logout">退出</el-button>
@@ -204,7 +201,7 @@ function logout() {
 .topbar-left { display: flex; align-items: center; gap: 20px; }
 .topbar-title { font-size: 15px; font-weight: 600; color: var(--color-text-title); }
 .topbar-right { display: flex; align-items: center; gap: 10px; }
-.topbar-ai-btn { font-size: 18px; }
+
 .topbar-user-name { font-size: 13px; color: var(--color-text-body); }
 
 /* 内容区 */

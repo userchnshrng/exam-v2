@@ -26,6 +26,24 @@ export function importQuestions(file: File) {
     })
 }
 
+/** 导入填空题 */
+export function importFillQuestions(file: File) {
+    const fd = new FormData()
+    fd.append('file', file)
+    return http.post<ApiResponse<ImportResult>>('/api/import/fill-questions', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    })
+}
+
+/** 导入判断题 */
+export function importJudgeQuestions(file: File) {
+    const fd = new FormData()
+    fd.append('file', file)
+    return http.post<ApiResponse<ImportResult>>('/api/import/judge-questions', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    })
+}
+
 /** 导入考试 */
 export function importExams(file: File) {
     const fd = new FormData()

@@ -20,6 +20,7 @@ export const dashboardMenus: Record<UserRole, DashboardMenuItem[]> = {
     { key: '/teacher/home', label: '首页', path: '/teacher/home' },
     { key: '/teacher/exam-management', label: '考试管理', path: '/teacher/exam-management' },
     { key: '/teacher/question-bank', label: '题库管理', path: '/teacher/question-bank' },
+    { key: '/teacher/question-import', label: '题目导入', path: '/teacher/question-import' },
     { key: '/teacher/student-management', label: '学生管理', path: '/teacher/student-management' },
     { key: '/teacher/statistics', label: '成绩统计', path: '/teacher/statistics' },
     { key: '/teacher/notice-management', label: '公告管理', path: '/teacher/notice-management' },

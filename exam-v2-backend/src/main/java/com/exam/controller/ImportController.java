@@ -32,6 +32,20 @@ public class ImportController {
         return ApiResponse.success(result);
     }
 
+    /** 导入填空题 */
+    @PostMapping("/fill-questions")
+    public ApiResponse<Map<String, Object>> importFillQuestions(@RequestParam("file") MultipartFile file) throws IOException {
+        Map<String, Object> result = importService.importFillQuestions(file.getBytes());
+        return ApiResponse.success(result);
+    }
+
+    /** 导入判断题 */
+    @PostMapping("/judge-questions")
+    public ApiResponse<Map<String, Object>> importJudgeQuestions(@RequestParam("file") MultipartFile file) throws IOException {
+        Map<String, Object> result = importService.importJudgeQuestions(file.getBytes());
+        return ApiResponse.success(result);
+    }
+
     /** 导入考试 */
     @PostMapping("/exams")
     public ApiResponse<Map<String, Object>> importExams(@RequestParam("file") MultipartFile file) throws IOException {

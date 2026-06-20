@@ -1,16 +1,21 @@
 <template>
-  <div class="data-import">
+  <div class="question-import">
     <el-card shadow="never" class="import-card">
-      <template #header><h3>数据导入</h3></template>
+      <template #header><h3>题目导入</h3></template>
       <el-tabs v-model="importType">
-        <el-tab-pane label="导入学生" name="students">
+        <el-tab-pane label="导入选择题" name="multi">
           <div class="import-desc">
-            <p>Excel 列顺序：姓名、年级、专业、班级、学院、电话、邮箱、密码、身份证号、性别</p>
+            <p>Excel 列顺序：科目、题目、选项A、选项B、选项C、选项D、正确答案、解析、分值、章节、难度</p>
           </div>
         </el-tab-pane>
-        <el-tab-pane label="导入考试" name="exams">
+        <el-tab-pane label="导入填空题" name="fill">
           <div class="import-desc">
-            <p>Excel 列顺序：描述、科目、试卷ID、考试日期、时长(分)、年级、学期、专业、学院、总分、类型、须知</p>
+            <p>Excel 列顺序：科目、题目、答案、解析、分值、章节、难度</p>
+          </div>
+        </el-tab-pane>
+        <el-tab-pane label="导入判断题" name="judge">
+          <div class="import-desc">
+            <p>Excel 列顺序：科目、题目、答案(T/F)、解析、分值、章节、难度</p>
           </div>
         </el-tab-pane>
       </el-tabs>
@@ -48,10 +53,10 @@
 import { ref } from 'vue'
 import { ElMessage } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
-import { importStudents, importExams, type ImportResult } from '@/api/importExport'
+import { importQuestions, importFillQuestions, importJudgeQuestions, type ImportResult } from '@/api/importExport'
 import type { UploadFile } from 'element-plus'
 
-const importType = ref('students')
+const importType = ref('multi')
 const file = ref<File | null>(null)
 const fileList = ref<UploadFile[]>([])
 const uploading = ref(false)
@@ -68,8 +73,9 @@ async function handleImport() {
   result.value = null
   try {
     let res: any
-    if (importType.value === 'students') res = await importStudents(file.value)
-    else res = await importExams(file.value)
+    if (importType.value === 'multi') res = await importQuestions(file.value)
+    else if (importType.value === 'fill') res = await importFillQuestions(file.value)
+    else res = await importJudgeQuestions(file.value)
     if (res.data.code === 0) result.value = res.data.data
     else ElMessage.error(res.data.message || '导入失败')
   } catch { ElMessage.error('导入失败') }
@@ -78,7 +84,7 @@ async function handleImport() {
 </script>
 
 <style scoped>
-.data-import { max-width: 700px; }
+.question-import { max-width: 700px; }
 .import-card { border-radius: 8px; }
 .import-desc { background: #f7f8fa; padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; color: #4e5969; }
 .import-desc p { margin: 0; }

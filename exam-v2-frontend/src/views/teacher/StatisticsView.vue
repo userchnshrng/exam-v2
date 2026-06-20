@@ -44,6 +44,7 @@
         </el-select>
       </template>
       <el-table :data="studentScores" stripe border v-loading="studentLoading" max-height="400">
+        <el-table-column prop="studentName" label="姓名" width="100" align="center" />
         <el-table-column prop="studentId" label="学号" width="100" align="center" />
         <el-table-column prop="subject" label="科目" width="150" />
         <el-table-column prop="score" label="得分" width="100" align="center">

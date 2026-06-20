@@ -18,7 +18,8 @@ import MessageCenterView from '@/views/student/MessageCenterView.vue'
 import DataImportView from '@/views/admin/DataImportView.vue'
 import DataExportView from '@/views/admin/DataExportView.vue'
 import StatisticsView from '@/views/teacher/StatisticsView.vue'
-import AIChatView from '@/views/common/AIChatView.vue'
+import QuestionImportView from '@/views/teacher/QuestionImportView.vue'
+
 
 const routes = [
     { path: '/login', name: 'login', component: LoginView },
@@ -45,6 +46,7 @@ const routes = [
             { path: 'home', name: 'teacher-home', component: PlaceholderView, meta: { title: '教师首页', description: '日常教学、考务安排。' } },
             { path: 'exam-management', name: 'teacher-exams', component: ExamManageView, meta: { title: '考试管理', description: '创建在线考试计划。' } },
             { path: 'question-bank', name: 'teacher-questions', component: QuestionManageView, meta: { title: '题库管理', description: '选择题、填空、判断题维护。' } },
+            { path: 'question-import', name: 'teacher-question-import', component: QuestionImportView, meta: { title: '题目导入', description: 'Excel 批量导入选择题、填空题、判断题。' } },
             { path: 'student-management', name: 'teacher-students', component: StudentManageView, meta: { title: '学生管理', description: '维护学生白名单与学号。' } },
             { path: 'statistics', name: 'teacher-statistics', component: StatisticsView, meta: { title: '成绩统计', description: '图表化成绩分布与多维度对比分析。' } },
             { path: 'notice-management', name: 'teacher-notices', component: NoticeManageView, meta: { title: '公告管理', description: '发布班级考务通知。' } }
@@ -65,8 +67,7 @@ const routes = [
     },
     // 4. 全屏考试
     { path: '/exam/taking/:examCode', name: 'exam-taking', component: ExamTakingView },
-    // 5. AI 助手（独立页面，所有角色可访问）
-    { path: '/ai-chat', name: 'ai-chat', component: AIChatView },
+
     // 6. 兜底
     { path: '/:pathMatch(.*)*', redirect: '/login' }
 ]

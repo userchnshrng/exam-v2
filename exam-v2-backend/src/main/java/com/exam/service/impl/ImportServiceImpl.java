@@ -1,8 +1,12 @@
 package com.exam.service.impl;
 
 import com.exam.entity.ExamManage;
+import com.exam.entity.FillQuestion;
+import com.exam.entity.JudgeQuestion;
 import com.exam.entity.MultiQuestion;
 import com.exam.mapper.ExamManageMapper;
+import com.exam.mapper.FillQuestionMapper;
+import com.exam.mapper.JudgeQuestionMapper;
 import com.exam.mapper.MultiQuestionMapper;
 import com.exam.mapper.StudentMapper;
 import com.exam.service.ImportService;
@@ -18,13 +22,19 @@ public class ImportServiceImpl implements ImportService {
 
     private final StudentMapper studentMapper;
     private final MultiQuestionMapper multiMapper;
+    private final FillQuestionMapper fillMapper;
+    private final JudgeQuestionMapper judgeMapper;
     private final ExamManageMapper examMapper;
 
     public ImportServiceImpl(StudentMapper studentMapper,
                              MultiQuestionMapper multiMapper,
+                             FillQuestionMapper fillMapper,
+                             JudgeQuestionMapper judgeMapper,
                              ExamManageMapper examMapper) {
         this.studentMapper = studentMapper;
         this.multiMapper = multiMapper;
+        this.fillMapper = fillMapper;
+        this.judgeMapper = judgeMapper;
         this.examMapper = examMapper;
     }
 
@@ -96,6 +106,66 @@ public class ImportServiceImpl implements ImportService {
                 q.setSection(section);
                 q.setLevel(level);
                 multiMapper.insert(q);
+                result[0] = (Integer) result[0] + 1;
+            } catch (Exception e) {
+                result[1] = (Integer) result[1] + 1;
+            }
+        });
+    }
+
+    @Override
+    public Map<String, Object> importFillQuestions(byte[] fileBytes) {
+        return parseExcel(fileBytes, (row, result) -> {
+            try {
+                String subject = getCell(row, 0);
+                String question = getCell(row, 1);
+                String answer = getCell(row, 2);
+                String analysis = getCell(row, 3);
+                String scoreStr = getCell(row, 4);
+                String section = getCell(row, 5);
+                String level = getCell(row, 6);
+
+                if (subject == null || question == null) return;
+
+                FillQuestion q = new FillQuestion();
+                q.setSubject(subject);
+                q.setQuestion(question);
+                q.setAnswer(answer);
+                q.setAnalysis(analysis);
+                q.setScore(scoreStr != null ? parseInt(scoreStr) : 2);
+                q.setSection(section);
+                q.setLevel(level);
+                fillMapper.insert(q);
+                result[0] = (Integer) result[0] + 1;
+            } catch (Exception e) {
+                result[1] = (Integer) result[1] + 1;
+            }
+        });
+    }
+
+    @Override
+    public Map<String, Object> importJudgeQuestions(byte[] fileBytes) {
+        return parseExcel(fileBytes, (row, result) -> {
+            try {
+                String subject = getCell(row, 0);
+                String question = getCell(row, 1);
+                String answer = getCell(row, 2);
+                String analysis = getCell(row, 3);
+                String scoreStr = getCell(row, 4);
+                String section = getCell(row, 5);
+                String level = getCell(row, 6);
+
+                if (subject == null || question == null) return;
+
+                JudgeQuestion q = new JudgeQuestion();
+                q.setSubject(subject);
+                q.setQuestion(question);
+                q.setAnswer(answer);
+                q.setAnalysis(analysis);
+                q.setScore(scoreStr != null ? parseInt(scoreStr) : 2);
+                q.setSection(section);
+                q.setLevel(level);
+                judgeMapper.insert(q);
                 result[0] = (Integer) result[0] + 1;
             } catch (Exception e) {
                 result[1] = (Integer) result[1] + 1;

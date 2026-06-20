@@ -10,6 +10,12 @@ public interface ImportService {
     /** 导入选择题 */
     Map<String, Object> importMultiQuestions(byte[] fileBytes);
 
+    /** 导入填空题 */
+    Map<String, Object> importFillQuestions(byte[] fileBytes);
+
+    /** 导入判断题 */
+    Map<String, Object> importJudgeQuestions(byte[] fileBytes);
+
     /** 导入考试 */
     Map<String, Object> importExams(byte[] fileBytes);
 }

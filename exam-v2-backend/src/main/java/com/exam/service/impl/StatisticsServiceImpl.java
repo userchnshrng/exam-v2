@@ -61,15 +61,15 @@ public class StatisticsServiceImpl implements StatisticsService {
 
     @Override
     public List<Map<String, Object>> studentScoresByExam(Integer examCode) {
-        List<Score> all = scoreMapper.list(null, 0, 10000);
+        List<Map<String, Object>> rawList = scoreMapper.listStudentScoresByExamCode(examCode);
         List<Map<String, Object>> result = new ArrayList<>();
-        for (Score s : all) {
-            if (!Objects.equals(s.getExamCode(), examCode)) continue;
+        for (Map<String, Object> row : rawList) {
             Map<String, Object> item = new LinkedHashMap<>();
-            item.put("studentId", s.getStudentId());
-            item.put("score", s.getEtScore());
-            item.put("subject", s.getSubject());
-            item.put("date", s.getAnswerDate());
+            item.put("studentId", row.get("studentId"));
+            item.put("studentName", row.get("studentName"));
+            item.put("score", row.get("etScore"));
+            item.put("subject", row.get("subject"));
+            item.put("date", row.get("answerDate"));
             result.add(item);
         }
         return result;
