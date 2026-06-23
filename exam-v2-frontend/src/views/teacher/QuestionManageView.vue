@@ -6,93 +6,141 @@
         <el-tab-pane label="选择题" name="multi" />
         <el-tab-pane label="填空题" name="fill" />
         <el-tab-pane label="判断题" name="judge" />
+        <el-tab-pane label="导入题目" name="import" />
       </el-tabs>
 
-      <!-- 搜索栏 -->
-      <el-form :inline="true" :model="searchForm" class="search-bar">
-        <el-form-item label="关键词">
-          <el-input v-model="searchForm.keyword" placeholder="搜索题目或科目" clearable
-                    @keyup.enter="handleSearch" style="width: 260px" />
-        </el-form-item>
-        <el-form-item>
-          <el-button type="primary" @click="handleSearch">搜索</el-button>
-          <el-button @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+      <!-- ====== 题库管理 Tab：搜索、表格、分页 ====== -->
+      <template v-if="questionType !== 'import'">
+        <el-form :inline="true" :model="searchForm" class="search-bar">
+          <el-form-item label="关键词">
+            <el-input v-model="searchForm.keyword" placeholder="搜索题目或科目" clearable
+                      @keyup.enter="handleSearch" style="width: 260px" />
+          </el-form-item>
+          <el-form-item>
+            <el-button type="primary" @click="handleSearch">搜索</el-button>
+            <el-button @click="handleReset">重置</el-button>
+          </el-form-item>
+        </el-form>
 
-      <!-- 操作栏 -->
-      <div class="table-toolbar">
-        <el-button type="primary" @click="openCreate">{{ createBtnText }}</el-button>
-      </div>
+        <div class="table-toolbar">
+          <el-button type="primary" @click="openCreate">{{ createBtnText }}</el-button>
+        </div>
 
-      <!-- ===== 选择题表格 ===== -->
-      <el-table v-show="questionType === 'multi'" :data="tableData" v-loading="loading" stripe border style="width:100%">
-        <el-table-column prop="questionId" label="ID" width="80" align="center" />
-        <el-table-column prop="subject" label="科目" width="120" />
-        <el-table-column prop="question" label="题目" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="rightAnswer" label="正确答案" width="90" align="center" />
-        <el-table-column prop="score" label="分值" width="60" align="center" />
-        <el-table-column prop="section" label="章节" width="100" show-overflow-tooltip />
-        <el-table-column prop="level" label="难度" width="60" align="center" />
-        <el-table-column label="操作" width="160" align="center" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
-            <el-popconfirm title="确定删除?" @confirm="handleDelete(row.questionId)">
-              <template #reference><el-button link type="danger" size="small">删除</el-button></template>
-            </el-popconfirm>
-          </template>
-        </el-table-column>
-      </el-table>
+        <!-- ===== 选择题表格 ===== -->
+        <el-table v-show="questionType === 'multi'" :data="tableData" v-loading="loading" stripe border style="width:100%">
+          <el-table-column prop="questionId" label="ID" width="80" align="center" />
+          <el-table-column prop="subject" label="科目" width="120" />
+          <el-table-column prop="question" label="题目" min-width="180" show-overflow-tooltip />
+          <el-table-column prop="rightAnswer" label="正确答案" width="90" align="center" />
+          <el-table-column prop="score" label="分值" width="60" align="center" />
+          <el-table-column prop="section" label="章节" width="100" show-overflow-tooltip />
+          <el-table-column prop="level" label="难度" width="60" align="center" />
+          <el-table-column label="操作" width="160" align="center" fixed="right">
+            <template #default="{ row }">
+              <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+              <el-popconfirm title="确定删除?" @confirm="handleDelete(row.questionId)">
+                <template #reference><el-button link type="danger" size="small">删除</el-button></template>
+              </el-popconfirm>
+            </template>
+          </el-table-column>
+        </el-table>
 
-      <!-- ===== 填空题表格 ===== -->
-      <el-table v-show="questionType === 'fill'" :data="tableData" v-loading="loading" stripe border style="width:100%">
-        <el-table-column prop="questionId" label="ID" width="80" align="center" />
-        <el-table-column prop="subject" label="科目" width="120" />
-        <el-table-column prop="question" label="题目" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="answer" label="答案" min-width="120" show-overflow-tooltip />
-        <el-table-column prop="score" label="分值" width="60" align="center" />
-        <el-table-column prop="section" label="章节" width="100" show-overflow-tooltip />
-        <el-table-column prop="level" label="难度" width="60" align="center" />
-        <el-table-column label="操作" width="160" align="center" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
-            <el-popconfirm title="确定删除?" @confirm="handleDelete(row.questionId)">
-              <template #reference><el-button link type="danger" size="small">删除</el-button></template>
-            </el-popconfirm>
-          </template>
-        </el-table-column>
-      </el-table>
+        <!-- ===== 填空题表格 ===== -->
+        <el-table v-show="questionType === 'fill'" :data="tableData" v-loading="loading" stripe border style="width:100%">
+          <el-table-column prop="questionId" label="ID" width="80" align="center" />
+          <el-table-column prop="subject" label="科目" width="120" />
+          <el-table-column prop="question" label="题目" min-width="200" show-overflow-tooltip />
+          <el-table-column prop="answer" label="答案" min-width="120" show-overflow-tooltip />
+          <el-table-column prop="score" label="分值" width="60" align="center" />
+          <el-table-column prop="section" label="章节" width="100" show-overflow-tooltip />
+          <el-table-column prop="level" label="难度" width="60" align="center" />
+          <el-table-column label="操作" width="160" align="center" fixed="right">
+            <template #default="{ row }">
+              <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+              <el-popconfirm title="确定删除?" @confirm="handleDelete(row.questionId)">
+                <template #reference><el-button link type="danger" size="small">删除</el-button></template>
+              </el-popconfirm>
+            </template>
+          </el-table-column>
+        </el-table>
 
-      <!-- ===== 判断题表格 ===== -->
-      <el-table v-show="questionType === 'judge'" :data="tableData" v-loading="loading" stripe border style="width:100%">
-        <el-table-column prop="questionId" label="ID" width="80" align="center" />
-        <el-table-column prop="subject" label="科目" width="120" />
-        <el-table-column prop="question" label="题目" min-width="240" show-overflow-tooltip />
-        <el-table-column prop="answer" label="答案" width="80" align="center" />
-        <el-table-column prop="score" label="分值" width="60" align="center" />
-        <el-table-column prop="section" label="章节" width="100" show-overflow-tooltip />
-        <el-table-column prop="level" label="难度" width="60" align="center" />
-        <el-table-column label="操作" width="160" align="center" fixed="right">
-          <template #default="{ row }">
-            <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
-            <el-popconfirm title="确定删除?" @confirm="handleDelete(row.questionId)">
-              <template #reference><el-button link type="danger" size="small">删除</el-button></template>
-            </el-popconfirm>
-          </template>
-        </el-table-column>
-      </el-table>
+        <!-- ===== 判断题表格 ===== -->
+        <el-table v-show="questionType === 'judge'" :data="tableData" v-loading="loading" stripe border style="width:100%">
+          <el-table-column prop="questionId" label="ID" width="80" align="center" />
+          <el-table-column prop="subject" label="科目" width="120" />
+          <el-table-column prop="question" label="题目" min-width="240" show-overflow-tooltip />
+          <el-table-column prop="answer" label="答案" width="80" align="center" />
+          <el-table-column prop="score" label="分值" width="60" align="center" />
+          <el-table-column prop="section" label="章节" width="100" show-overflow-tooltip />
+          <el-table-column prop="level" label="难度" width="60" align="center" />
+          <el-table-column label="操作" width="160" align="center" fixed="right">
+            <template #default="{ row }">
+              <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+              <el-popconfirm title="确定删除?" @confirm="handleDelete(row.questionId)">
+                <template #reference><el-button link type="danger" size="small">删除</el-button></template>
+              </el-popconfirm>
+            </template>
+          </el-table-column>
+        </el-table>
 
-      <div class="table-pagination">
-        <el-pagination
-            v-model:current-page="searchForm.page"
-            v-model:page-size="searchForm.size"
-            :total="total"
-            :page-sizes="[5, 10, 20, 50]"
-            layout="total, sizes, prev, pager, next, jumper"
-            @size-change="handleSizeChange"
-            @current-change="handlePageChange"
-        />
-      </div>
+        <div class="table-pagination">
+          <el-pagination
+              v-model:current-page="searchForm.page"
+              v-model:page-size="searchForm.size"
+              :total="total"
+              :page-sizes="[5, 10, 20, 50]"
+              layout="total, sizes, prev, pager, next, jumper"
+              @size-change="handleSizeChange"
+              @current-change="handlePageChange"
+          />
+        </div>
+      </template>
+
+      <!-- ====== 导入题目 Tab ====== -->
+      <template v-if="questionType === 'import'">
+        <el-tabs v-model="importType">
+          <el-tab-pane label="导入选择题" name="multi">
+            <div class="import-desc">
+              <p>Excel 列顺序：科目、题目、选项A、选项B、选项C、选项D、正确答案、解析、分值、章节、难度</p>
+            </div>
+          </el-tab-pane>
+          <el-tab-pane label="导入填空题" name="fill">
+            <div class="import-desc">
+              <p>Excel 列顺序：科目、题目、答案、解析、分值、章节、难度</p>
+            </div>
+          </el-tab-pane>
+          <el-tab-pane label="导入判断题" name="judge">
+            <div class="import-desc">
+              <p>Excel 列顺序：科目、题目、答案(T/F)、解析、分值、章节、难度</p>
+            </div>
+          </el-tab-pane>
+        </el-tabs>
+
+        <el-upload
+            :auto-upload="false"
+            :limit="1"
+            accept=".xlsx,.xls"
+            :on-change="handleFileChange"
+            :file-list="fileList"
+            drag
+        >
+          <el-icon class="el-icon--upload"><UploadFilled /></el-icon>
+          <div class="el-upload__text">将 Excel 文件拖到此处，或<em>点击上传</em></div>
+        </el-upload>
+
+        <el-button type="primary" :loading="uploading" :disabled="!importFile"
+                   @click="handleImport" style="margin-top:16px;width:100%">
+          开始导入
+        </el-button>
+
+        <div v-if="importResult" class="import-result">
+          <el-alert :title="`导入完成：成功 ${importResult.success} 条，失败 ${importResult.fail} 条，共 ${importResult.total} 条`"
+                    :type="importResult.fail > 0 ? 'warning' : 'success'" :closable="false" show-icon />
+          <div v-if="importResult.errors?.length" class="error-list">
+            <p v-for="(e, i) in importResult.errors" :key="i" class="error-item">{{ e }}</p>
+          </div>
+        </div>
+      </template>
     </el-card>
 
     <!-- ======== 新增 / 编辑 弹窗 ======== -->
@@ -196,23 +244,27 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { UploadFilled } from '@element-plus/icons-vue'
+import type { UploadFile } from 'element-plus'
 import {
   listMulti, createMulti, updateMulti, deleteMulti,
   listFill, createFill, updateFill, deleteFill,
   listJudge, createJudge, updateJudge, deleteJudge,
   type MultiQuestion, type FillQuestion, type JudgeQuestion
 } from '@/api/question'
+import { importQuestions, importFillQuestions, importJudgeQuestions, type ImportResult } from '@/api/importExport'
 
 // ---------- Tab & Search ----------
-const questionType = ref<'multi' | 'fill' | 'judge'>('multi')
+const questionType = ref<'multi' | 'fill' | 'judge' | 'import'>('multi')
 const searchForm = reactive({ keyword: '', page: 1, size: 10 })
 const createBtnText = computed(() => {
   if (questionType.value === 'multi') return '新增选择题'
   if (questionType.value === 'fill') return '新增填空题'
-  return '新增判断题'
+  if (questionType.value === 'judge') return '新增判断题'
+  return '新增题目'
 })
 
 // ---------- Table ----------
@@ -240,7 +292,10 @@ async function fetchList() {
 
 function handleSearch() { searchForm.page = 1; fetchList() }
 function handleReset() { searchForm.keyword = ''; searchForm.page = 1; fetchList() }
-function handleTabChange() { searchForm.page = 1; fetchList() }
+function handleTabChange() {
+  if (questionType.value === 'import') { importResult.value = null; return }
+  searchForm.page = 1; fetchList()
+}
 function handlePageChange() { fetchList() }
 function handleSizeChange() { searchForm.page = 1; fetchList() }
 
@@ -288,11 +343,12 @@ const judgeRules: FormRules = {
 const formRules = computed(() => {
   if (questionType.value === 'multi') return multiRules
   if (questionType.value === 'fill') return fillRules
-  return judgeRules
+  if (questionType.value === 'judge') return judgeRules
+  return multiRules
 })
 
 const dialogTitle = computed(() => {
-  const typeName = questionType.value === 'multi' ? '选择题' : questionType.value === 'fill' ? '填空题' : '判断题'
+  const typeName = questionType.value === 'multi' ? '选择题' : questionType.value === 'fill' ? '填空题' : questionType.value === 'judge' ? '判断题' : '题目'
   return (isEdit.value ? '编辑' : '新增') + typeName
 })
 
@@ -348,13 +404,39 @@ async function handleDelete(id: number) {
   }
 }
 
+// ---------- Import ----------
+const importType = ref<'multi' | 'fill' | 'judge'>('multi')
+const importFile = ref<File | null>(null)
+const fileList = ref<UploadFile[]>([])
+const uploading = ref(false)
+const importResult = ref<ImportResult | null>(null)
+
+function handleFileChange(uploadFile: UploadFile) {
+  importFile.value = uploadFile.raw || null
+  importResult.value = null
+}
+
+async function handleImport() {
+  if (!importFile.value) { ElMessage.warning('请先选择文件'); return }
+  uploading.value = true
+  importResult.value = null
+  try {
+    let res: any
+    if (importType.value === 'multi') res = await importQuestions(importFile.value)
+    else if (importType.value === 'fill') res = await importFillQuestions(importFile.value)
+    else res = await importJudgeQuestions(importFile.value)
+    if (res.data.code === 0) importResult.value = res.data.data
+    else ElMessage.error(res.data.message || '导入失败')
+  } catch { ElMessage.error('导入失败') }
+  finally { uploading.value = false }
+}
+
 // 切换 tab 时重置表单校验
-watch(questionType, () => {
+watch(questionType, (val) => {
+  if (val === 'import') return
   formRef.value?.clearValidate()
   Object.assign(form, emptyMulti())
 })
-
-import { onMounted } from 'vue'
 onMounted(() => fetchList())
 </script>
 
@@ -364,4 +446,11 @@ onMounted(() => fetchList())
 .search-bar { margin-top: 16px; }
 .table-toolbar { margin-bottom: 16px; }
 .table-pagination { display: flex; justify-content: flex-end; margin-top: 16px; }
+
+/* 导入 Tab */
+.import-desc { background: #f7f8fa; padding: 12px; border-radius: 6px; margin-bottom: 16px; font-size: 13px; color: #4e5969; }
+.import-desc p { margin: 0; }
+.import-result { margin-top: 16px; }
+.error-list { margin-top: 8px; }
+.error-item { color: #f53f3f; font-size: 12px; margin: 4px 0; }
 </style>
