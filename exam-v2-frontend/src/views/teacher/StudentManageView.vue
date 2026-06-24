@@ -29,7 +29,7 @@
         <el-table-column prop="clazz" label="班级" width="70" align="center" />
         <el-table-column prop="institute" label="学院" width="140" show-overflow-tooltip />
         <el-table-column prop="tel" label="电话" width="130" />
-        <el-table-column label="操作" width="160" align="center" fixed="right">
+        <el-table-column v-if="!isTeacherRole" label="操作" width="160" align="center" fixed="right">
           <template #default="{ row }">
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-popconfirm title="确定删除该学生？" @confirm="handleDelete(row.studentId)">
