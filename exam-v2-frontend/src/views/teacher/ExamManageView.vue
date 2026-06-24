@@ -16,7 +16,7 @@
 
     <!-- ======== 表格 ======== -->
     <el-card class="table-card" shadow="never">
-      <div class="table-toolbar">
+      <div v-if="!isTeacherRole" class="table-toolbar">
         <el-button type="primary" @click="openCreate">新增考试</el-button>
       </div>
 
@@ -28,15 +28,17 @@
         <el-table-column prop="examDate" label="考试日期" width="110" align="center" />
         <el-table-column prop="totalTime" label="时长(分)" width="80" align="center" />
         <el-table-column prop="type" label="类型" width="90" align="center" />
-        <el-table-column label="操作" width="210" align="center" fixed="right">
+        <el-table-column label="操作" :width="isTeacherRole ? 90 : 210" align="center" fixed="right">
           <template #default="{ row }">
             <el-button link type="success" size="small" @click="openCompose(row)">组卷</el-button>
-            <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
-            <el-popconfirm title="确定删除该考试？" @confirm="handleDelete(row.examCode)">
-              <template #reference>
-                <el-button link type="danger" size="small">删除</el-button>
-              </template>
-            </el-popconfirm>
+            <template v-if="!isTeacherRole">
+              <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
+              <el-popconfirm title="确定删除该考试？" @confirm="handleDelete(row.examCode)">
+                <template #reference>
+                  <el-button link type="danger" size="small">删除</el-button>
+                </template>
+              </el-popconfirm>
+            </template>
           </template>
         </el-table-column>
       </el-table>
@@ -152,9 +154,14 @@
       </template>
 
       <div v-if="!composeExam?.paperId" class="compose-no-paper">
-        <el-result icon="warning" title="尚未设置试卷编号" sub-title="请先编辑该考试，填写试卷编号后再进行组卷">
+        <el-result icon="warning" title="尚未设置试卷编号" sub-title="请在下方填写试卷编号后开始组卷">
           <template #extra>
-            <el-button type="primary" @click="composeVisible = false">关闭</el-button>
+            <div class="compose-set-paper">
+              <el-input-number v-model="newPaperId" :min="1" placeholder="试卷编号" style="width: 180px" />
+              <el-button type="primary" :loading="savingPaperId" :disabled="!newPaperId" @click="handleSetPaperId">
+                保存并开始组卷
+              </el-button>
+            </div>
           </template>
         </el-result>
       </div>
@@ -216,10 +223,14 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { listExams, createExam, updateExam, deleteExam, type ExamManage } from '@/api/exam'
 import { getComposeData, addQuestionToPaper, removeQuestionFromPaper, autoCompose, type ComposeQuestion } from '@/api/examPaper'
+
+const route = useRoute()
+const isTeacherRole = computed(() => route.path.startsWith('/teacher'))
 
 const searchForm = reactive({ keyword: '', page: 1, size: 10 })
 
@@ -317,6 +328,8 @@ const composeData = ref<ComposeQuestion[]>([])
 const composeChecked = ref<string[]>([])
 const composeLoading = ref(false)
 const autoComposing = ref(false)
+const newPaperId = ref<number | null>(null)
+const savingPaperId = ref(false)
 
 function compKey(q: ComposeQuestion) { return `${q.questionType}_${q.questionId}` }
 
@@ -335,7 +348,23 @@ function openCompose(row: ExamManage) {
   composeTab.value = '1'
   composeChecked.value = []
   composeData.value = []
+  newPaperId.value = null
   composeVisible.value = true
+}
+
+async function handleSetPaperId() {
+  if (!composeExam.value || !newPaperId.value) return
+  savingPaperId.value = true
+  try {
+    await updateExam(composeExam.value.examCode!, { ...composeExam.value, paperId: newPaperId.value })
+    composeExam.value.paperId = newPaperId.value
+    ElMessage.success('试卷编号已设置')
+    await loadComposeData()
+  } catch {
+    ElMessage.error('设置失败')
+  } finally {
+    savingPaperId.value = false
+  }
 }
 
 async function loadComposeData() {
@@ -414,6 +443,9 @@ onMounted(() => fetchList())
 }
 .compose-no-paper {
   padding: 20px 0;
+}
+.compose-set-paper {
+  display: flex; align-items: center; gap: 12px; margin-top: 8px;
 }
 .compose-tabs {
   margin-bottom: 0;

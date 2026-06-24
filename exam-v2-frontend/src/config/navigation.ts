@@ -4,15 +4,20 @@ export interface DashboardMenuItem {
   key: string
   label: string
   path: string
+  children?: DashboardMenuItem[]
 }
 
 export const dashboardMenus: Record<UserRole, DashboardMenuItem[]> = {
   ADMIN: [
     { key: '/admin/home', label: '首页', path: '/admin/home' },
     { key: '/admin/teacher-management', label: '教师管理', path: '/admin/teacher-management' },
-    { key: '/admin/notice-management', label: '公告管理', path: '/admin/notice-management' },
-    { key: '/admin/data-import', label: '数据导入', path: '/admin/data-import' },
-    { key: '/admin/data-export', label: '数据导出', path: '/admin/data-export' }
+    { key: '/admin/student-management', label: '学生管理', path: '/admin/student-management' },
+    { key: '/admin/exam-management', label: '考试管理', path: '/admin/exam-management' },
+    { key: '/admin/data', label: '数据管理', path: '/admin/data-import', children: [
+      { key: '/admin/data-import', label: '数据导入', path: '/admin/data-import' },
+      { key: '/admin/data-export', label: '数据导出', path: '/admin/data-export' }
+    ]},
+    { key: '/admin/notice-management', label: '公告管理', path: '/admin/notice-management' }
   ],
   TEACHER: [
     { key: '/teacher/home', label: '首页', path: '/teacher/home' },

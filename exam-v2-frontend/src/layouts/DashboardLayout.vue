@@ -23,16 +23,29 @@
       <el-menu
           class="sidebar-menu"
           :default-active="activeMenuKey"
+          :default-openeds="openedMenus"
           @select="handleSelect"
       >
-        <el-menu-item
-            v-for="item in menus"
-            :key="item.key"
-            :index="item.key"
-            class="sidebar-menu__item"
-        >
-          <span class="menu-label">{{ item.label }}</span>
-        </el-menu-item>
+        <template v-for="item in menus" :key="item.key">
+          <!-- 有子菜单 -->
+          <el-sub-menu v-if="item.children?.length" :index="item.key" class="sidebar-submenu">
+            <template #title>
+              <span class="menu-label">{{ item.label }}</span>
+            </template>
+            <el-menu-item
+                v-for="child in item.children"
+                :key="child.key"
+                :index="child.key"
+                class="sidebar-menu__item sidebar-menu__child"
+            >
+              <span class="menu-label">{{ child.label }}</span>
+            </el-menu-item>
+          </el-sub-menu>
+          <!-- 叶子菜单 -->
+          <el-menu-item v-else :index="item.key" class="sidebar-menu__item">
+            <span class="menu-label">{{ item.label }}</span>
+          </el-menu-item>
+        </template>
       </el-menu>
 
       <div class="sidebar-footer">
@@ -68,7 +81,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { dashboardMenus, type DashboardMenuItem } from '@/config/navigation'
@@ -88,6 +101,21 @@ const userStore = useUserStore()
 
 const menus = computed<DashboardMenuItem[]>(() => dashboardMenus[props.role])
 const activeMenuKey = computed(() => route.path)
+// 自动展开包含当前路由的父级子菜单
+const openedMenus = ref<string[]>([])
+function refreshOpened() {
+  const parents: string[] = []
+  for (const item of menus.value) {
+    if (item.children?.some(c => c.key === route.path)) {
+      parents.push(item.key)
+    }
+  }
+  // 合并已有展开项，保留用户手动展开的
+  for (const p of parents) {
+    if (!openedMenus.value.includes(p)) openedMenus.value.push(p)
+  }
+}
+watch(() => route.path, refreshOpened, { immediate: true })
 const displayName = computed(() => userStore.displayName || getRoleLabel(props.role))
 const roleLabel = computed(() => getRoleLabel(props.role))
 const homePath = computed(() => getHomePath(props.role))
@@ -105,10 +133,19 @@ const roleTagType = computed(() => {
 })
 
 function handleSelect(key: string) {
-  const selected = menus.value.find((item) => item.key === key)
-  if (!selected) return
-  if (selected.path !== route.path) {
-    router.push(selected.path)
+  // 在顶层和子菜单中查找
+  for (const item of menus.value) {
+    if (item.key === key) {
+      if (item.path !== route.path) router.push(item.path)
+      return
+    }
+    if (item.children) {
+      const child = item.children.find(c => c.key === key)
+      if (child && child.path !== route.path) {
+        router.push(child.path)
+        return
+      }
+    }
   }
 }
 
@@ -172,6 +209,39 @@ function logout() {
   font-weight: 600;
 }
 .sidebar-menu .el-menu-item * { color: inherit !important; }
+
+/* 子菜单 */
+.sidebar-submenu {
+  margin: 2px 12px; border-radius: 8px;
+}
+.sidebar-submenu :deep(.el-sub-menu__title) {
+  height: 44px; line-height: 44px; color: rgba(255,255,255,0.65) !important;
+  font-size: 14px; border-radius: 8px; padding-left: 16px !important;
+}
+.sidebar-submenu :deep(.el-sub-menu__title):hover {
+  background: rgba(255,255,255,0.08) !important; color: #fff !important;
+}
+/* 子菜单展开容器 — 覆盖 Element Plus 白色背景 */
+.sidebar-submenu :deep(.el-menu) {
+  background: transparent !important;
+}
+/* 子菜单项 */
+.sidebar-menu__child {
+  padding-left: 36px !important;
+  color: rgba(255,255,255,0.55) !important;
+  background: rgba(0,0,0,0.15) !important;
+  margin: 1px 0;
+  border-radius: 6px;
+}
+.sidebar-menu__child:hover {
+  color: #fff !important;
+  background: rgba(255,255,255,0.1) !important;
+}
+.sidebar-menu__child.is-active {
+  color: #fff !important;
+  background: rgba(67,97,238,0.3) !important;
+  font-weight: 600;
+}
 
 .sidebar-footer {
   padding: 14px 18px; border-top: 1px solid rgba(255,255,255,0.06);

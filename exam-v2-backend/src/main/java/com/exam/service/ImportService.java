@@ -18,4 +18,7 @@ public interface ImportService {
 
     /** 导入考试 */
     Map<String, Object> importExams(byte[] fileBytes);
+
+    /** 导入教师 */
+    Map<String, Object> importTeachers(byte[] fileBytes);
 }

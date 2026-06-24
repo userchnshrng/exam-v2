@@ -53,6 +53,15 @@ export function importExams(file: File) {
     })
 }
 
+/** 导入教师 */
+export function importTeachers(file: File) {
+    const fd = new FormData()
+    fd.append('file', file)
+    return http.post<ApiResponse<ImportResult>>('/api/import/teachers', fd, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+    })
+}
+
 /** 下载导出文件 */
 export function downloadExport(type: string, params?: Record<string, any>) {
     return http.get(`/api/export/${type}`, {

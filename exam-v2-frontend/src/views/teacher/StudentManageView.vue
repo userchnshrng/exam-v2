@@ -16,7 +16,7 @@
 
     <!-- ======== 表格 ======== -->
     <el-card class="table-card" shadow="never">
-      <div class="table-toolbar">
+      <div v-if="!isTeacherRole" class="table-toolbar">
         <el-button type="primary" @click="openCreate">新增学生</el-button>
       </div>
 
@@ -132,9 +132,13 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { listStudents, createStudent, updateStudent, deleteStudent, type Student } from '@/api/student'
+
+const route = useRoute()
+const isTeacherRole = computed(() => route.path.startsWith('/teacher'))
 
 const searchForm = reactive({ keyword: '', page: 1, size: 10 })
 

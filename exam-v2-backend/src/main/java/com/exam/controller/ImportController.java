@@ -52,4 +52,11 @@ public class ImportController {
         Map<String, Object> result = importService.importExams(file.getBytes());
         return ApiResponse.success(result);
     }
+
+    /** 导入教师 */
+    @PostMapping("/teachers")
+    public ApiResponse<Map<String, Object>> importTeachers(@RequestParam("file") MultipartFile file) throws IOException {
+        Map<String, Object> result = importService.importTeachers(file.getBytes());
+        return ApiResponse.success(result);
+    }
 }

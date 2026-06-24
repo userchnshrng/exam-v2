@@ -31,9 +31,11 @@ const routes = [
         children: [
             { path: 'home', name: 'admin-home', component: PlaceholderView, meta: { title: '管理员首页', description: '全站基础数据概览。' } },
             { path: 'teacher-management', name: 'admin-teachers', component: TeacherManageView, meta: { title: '教师管理', description: '管理全校授课教师账号。' } },
-            { path: 'notice-management', name: 'admin-notices', component: NoticeManageView, meta: { title: '公告管理', description: '发布全校通知公告。' } },
-            { path: 'data-import', name: 'admin-import', component: DataImportView, meta: { title: '数据导入', description: 'Excel 批量导入学生、题库、考试数据。' } },
-            { path: 'data-export', name: 'admin-export', component: DataExportView, meta: { title: '数据导出', description: '导出学生、教师、成绩、考试数据为 Excel。' } }
+            { path: 'student-management', name: 'admin-students', component: StudentManageView, meta: { title: '学生管理', description: '管理全校在读学生账号。' } },
+            { path: 'exam-management', name: 'admin-exams', component: ExamManageView, meta: { title: '考试管理', description: '管理全校考试计划。' } },
+            { path: 'data-import', name: 'admin-import', component: DataImportView, meta: { title: '数据导入', description: 'Excel 批量导入学生、教师、考试数据。' } },
+            { path: 'data-export', name: 'admin-export', component: DataExportView, meta: { title: '数据导出', description: '导出学生、教师、成绩、考试数据为 Excel。' } },
+            { path: 'notice-management', name: 'admin-notices', component: NoticeManageView, meta: { title: '公告管理', description: '发布全校通知公告。' } }
         ]
     },
     // 2. 教师后台

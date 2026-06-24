@@ -4,11 +4,13 @@ import com.exam.entity.ExamManage;
 import com.exam.entity.FillQuestion;
 import com.exam.entity.JudgeQuestion;
 import com.exam.entity.MultiQuestion;
+import com.exam.entity.Teacher;
 import com.exam.mapper.ExamManageMapper;
 import com.exam.mapper.FillQuestionMapper;
 import com.exam.mapper.JudgeQuestionMapper;
 import com.exam.mapper.MultiQuestionMapper;
 import com.exam.mapper.StudentMapper;
+import com.exam.mapper.TeacherMapper;
 import com.exam.service.ImportService;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
@@ -21,17 +23,20 @@ import java.util.*;
 public class ImportServiceImpl implements ImportService {
 
     private final StudentMapper studentMapper;
+    private final TeacherMapper teacherMapper;
     private final MultiQuestionMapper multiMapper;
     private final FillQuestionMapper fillMapper;
     private final JudgeQuestionMapper judgeMapper;
     private final ExamManageMapper examMapper;
 
     public ImportServiceImpl(StudentMapper studentMapper,
+                             TeacherMapper teacherMapper,
                              MultiQuestionMapper multiMapper,
                              FillQuestionMapper fillMapper,
                              JudgeQuestionMapper judgeMapper,
                              ExamManageMapper examMapper) {
         this.studentMapper = studentMapper;
+        this.teacherMapper = teacherMapper;
         this.multiMapper = multiMapper;
         this.fillMapper = fillMapper;
         this.judgeMapper = judgeMapper;
@@ -234,6 +239,44 @@ public class ImportServiceImpl implements ImportService {
             } catch (Exception ex) {
                 result[1] = (Integer) result[1] + 1;
                 rowErrors.add("第" + rowNum + "行插入失败: " + ex.getMessage());
+            }
+        });
+    }
+
+    @Override
+    public Map<String, Object> importTeachers(byte[] fileBytes) {
+        return parseExcel(fileBytes, (row, rowNum, result, rowErrors) -> {
+            try {
+                String teacherName = getCell(row, 0);
+                String institute = getCell(row, 1);
+                String sex = getCell(row, 2);
+                String tel = getCell(row, 3);
+                String email = getCell(row, 4);
+                String pwd = getCell(row, 5);
+                String cardId = getCell(row, 6);
+                String type = getCell(row, 7);
+
+                if (teacherName == null || teacherName.isEmpty()) {
+                    result[1] = (Integer) result[1] + 1;
+                    rowErrors.add("第" + rowNum + "行: 姓名为空，已跳过");
+                    return;
+                }
+
+                Teacher t = new Teacher();
+                t.setTeacherName(teacherName);
+                t.setInstitute(institute);
+                t.setSex(sex != null ? sex : "男");
+                t.setTel(tel);
+                t.setEmail(email);
+                t.setPwd(pwd != null ? pwd : "123456");
+                t.setCardId(cardId);
+                t.setType(type);
+                t.setRole("1");
+                teacherMapper.insert(t);
+                result[0] = (Integer) result[0] + 1;
+            } catch (Exception e) {
+                result[1] = (Integer) result[1] + 1;
+                rowErrors.add("第" + rowNum + "行插入失败: " + e.getMessage());
             }
         });
     }
