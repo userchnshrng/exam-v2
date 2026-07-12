@@ -20,6 +20,6 @@ spring.servlet.multipart:
 
 deepseek:
   api:
-    key: ${DEEPSEEK_API_KEY:sk-3af9a95bacea411c974cc94c8eeec701}
+    key: ${DEEPSEEK_API_KEY:your_deepseek_key_here}
     base-url: https://api.deepseek.com/v1
     model: deepseek-v4-flash
