@@ -8,13 +8,13 @@ import PlaceholderView from '@/views/dashboard/PlaceholderView.vue'
 import NoticeManageView from '@/views/notice/NoticeManageView.vue'
 import TeacherManageView from '@/views/admin/TeacherManageView.vue'
 import StudentManageView from '@/views/teacher/StudentManageView.vue'
+import StudentHomeView from '@/views/student/StudentHomeView.vue'
 import ExamManageView from '@/views/teacher/ExamManageView.vue'
 import QuestionManageView from '@/views/teacher/QuestionManageView.vue'
 import MyExamsView from '@/views/student/MyExamsView.vue'
 import ExamDetailView from '@/views/student/ExamDetailView.vue'
 import ExamTakingView from '@/views/student/ExamTakingView.vue'
 import ScoreQueryView from '@/views/student/ScoreQueryView.vue'
-import MessageCenterView from '@/views/student/MessageCenterView.vue'
 import DataImportView from '@/views/admin/DataImportView.vue'
 import DataExportView from '@/views/admin/DataExportView.vue'
 import StatisticsView from '@/views/teacher/StatisticsView.vue'
@@ -58,11 +58,10 @@ const routes = [
         component: StudentLayout,
         meta: { role: 'STUDENT' },
         children: [
-            { path: 'home', name: 'student-home', component: PlaceholderView, meta: { title: '学生首页', description: '查看紧迫考试项目。' } },
+            { path: 'home', name: 'student-home', component: StudentHomeView, meta: { title: '学生首页', description: '查看紧迫考试项目。' } },
             { path: 'my-exams', name: 'student-exams', component: MyExamsView, meta: { title: '我的考试', description: '可参加考试列表。' } },
             { path: 'exam-detail/:examCode', name: 'student-exam-detail', component: ExamDetailView, meta: { title: '考试详情', description: '考试说明与须知。' } },
-            { path: 'score-query', name: 'student-scores', component: ScoreQueryView, meta: { title: '成绩查询', description: '历史考试成绩与得分。' } },
-            { path: 'message-center', name: 'student-messages', component: MessageCenterView, meta: { title: '消息中心', description: '通知与留言回复。' } }
+            { path: 'score-query', name: 'student-scores', component: ScoreQueryView, meta: { title: '成绩查询', description: '历史考试成绩与得分。' } }
         ]
     },
     // 4. 全屏考试

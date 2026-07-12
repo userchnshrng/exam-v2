@@ -13,6 +13,9 @@ public interface ExamAnswerMapper {
     @Options(useGeneratedKeys = true, keyProperty = "answerId")
     int insert(ExamAnswer answer);
 
+    @Select("SELECT * FROM exam_answer WHERE answerId = #{answerId}")
+    ExamAnswer findById(@Param("answerId") Integer answerId);
+
     @Select("SELECT * FROM exam_answer WHERE examCode = #{examCode} AND studentId = #{studentId}")
     List<ExamAnswer> findByExamAndStudent(@Param("examCode") Integer examCode,
                                           @Param("studentId") Integer studentId);

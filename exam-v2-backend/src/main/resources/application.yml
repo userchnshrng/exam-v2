@@ -17,3 +17,9 @@ mybatis:
 spring.servlet.multipart:
   max-file-size: 10MB
   max-request-size: 10MB
+
+deepseek:
+  api:
+    key: ${DEEPSEEK_API_KEY:sk-3af9a95bacea411c974cc94c8eeec701}
+    base-url: https://api.deepseek.com/v1
+    model: deepseek-v4-flash

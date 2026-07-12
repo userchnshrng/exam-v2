@@ -30,7 +30,6 @@ export const dashboardMenus: Record<UserRole, DashboardMenuItem[]> = {
   STUDENT: [
     { key: '/student/home', label: '首页', path: '/student/home' },
     { key: '/student/my-exams', label: '我的考试', path: '/student/my-exams' },
-    { key: '/student/score-query', label: '成绩查询', path: '/student/score-query' },
-    { key: '/student/message-center', label: '消息中心', path: '/student/message-center' }
+    { key: '/student/score-query', label: '成绩查询', path: '/student/score-query' }
   ]
 }

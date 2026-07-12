@@ -8,7 +8,9 @@ import com.exam.service.ScoreService;
 import com.exam.vo.ExamAnswerVO;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/exam-answers")
@@ -66,6 +68,26 @@ public class ExamAnswerController {
         answer.setAnswerId(answerId);
         examAnswerService.updateAnswer(answer);
         return ApiResponse.success(null);
+    }
+
+    /**
+     * AI 智能解析 — 学生查看某条答题记录的考点与思路解析
+     */
+    @GetMapping("/{answerId}/ai-analysis")
+    public ApiResponse<Map<String, String>> getAiAnalysis(@PathVariable Integer answerId) {
+        if (!UserContext.isStudent()) {
+            throw new RuntimeException("仅学生可使用 AI 解析功能");
+        }
+        int studentId;
+        try {
+            studentId = Integer.parseInt(UserContext.getUserId());
+        } catch (NumberFormatException e) {
+            throw new RuntimeException("无法获取学生身份");
+        }
+        String analysis = examAnswerService.getAiAnalysis(answerId, studentId);
+        Map<String, String> result = new HashMap<>();
+        result.put("analysis", analysis);
+        return ApiResponse.success(result);
     }
 
     /**

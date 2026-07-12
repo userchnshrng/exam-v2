@@ -41,3 +41,8 @@ export function updateExamAnswer(answerId: number, data: Partial<ExamAnswerRecor
 export function resetExamRecord(examCode: number, studentId: number) {
     return http.delete<ApiResponse<null>>(`/api/exam-answers/${examCode}/${studentId}`)
 }
+
+/** AI 智能解析 — 获取某条答题记录的考点与思路解析 */
+export function getAiAnalysis(answerId: number) {
+    return http.get<ApiResponse<{ analysis: string }>>(`/api/exam-answers/${answerId}/ai-analysis`)
+}

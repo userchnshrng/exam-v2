@@ -1,19 +1,25 @@
 <template>
   <div class="score-query">
-    <!-- 成绩列表 -->
-    <el-card v-if="!showDetail" shadow="never" class="table-card">
-      <el-table :data="tableData" v-loading="loading" stripe border style="width:100%">
-        <el-table-column prop="subject" label="科目" width="140" />
-        <el-table-column prop="etScore" label="得分" width="80" align="center">
+    <!-- ==================== 成绩列表 ==================== -->
+    <el-card v-if="!showDetail" class="list-card" shadow="never">
+      <template #header>
+        <span class="card-header-title">📊 我的成绩</span>
+      </template>
+
+      <el-table :data="tableData" v-loading="loading" stripe style="width:100%">
+        <el-table-column prop="subject" label="科目" width="160" />
+        <el-table-column prop="etScore" label="得分" width="90" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.etScore >= 60 ? 'success' : 'danger'">{{ row.etScore ?? '-' }}</el-tag>
+            <el-tag :type="row.etScore >= 60 ? 'success' : 'danger'" effect="light" round>
+              {{ row.etScore ?? '-' }}
+            </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="answerDate" label="答题日期" width="120" align="center" />
+        <el-table-column prop="answerDate" label="答题日期" width="130" align="center" />
         <el-table-column label="操作" width="120" align="center">
           <template #default="{ row }">
-            <el-button type="primary" size="small" link @click="showAnswers(row)">
-              考试详情
+            <el-button type="primary" size="small" @click="showAnswers(row)">
+              考试详情 →
             </el-button>
           </template>
         </el-table-column>
@@ -29,30 +35,47 @@
       </div>
     </el-card>
 
-    <!-- 考试详情 -->
+    <!-- ==================== 考试详情 ==================== -->
     <div v-else class="detail-view">
-      <div class="detail-header">
-        <el-button @click="backToList" type="default" size="small">← 返回列表</el-button>
-        <span class="detail-title">{{ detailSubject }} — 答题详情</span>
-        <div class="detail-summary">
-          <el-tag type="success" size="small">✓ {{ correctCount }} 正确</el-tag>
-          <el-tag type="danger" size="small">✗ {{ wrongCount }} 错误</el-tag>
-          <el-tag type="info" size="small">共 {{ answerData.length }} 题</el-tag>
+      <!-- 概览卡片 -->
+      <div class="overview-row">
+        <el-button class="back-btn" @click="backToList" text>
+          ← 返回列表
+        </el-button>
+        <span class="detail-subject">{{ detailSubject }}</span>
+      </div>
+
+      <div class="stat-cards">
+        <div class="stat-card stat-total">
+          <div class="stat-card__value">{{ answerData.length }}</div>
+          <div class="stat-card__label">总题数</div>
+        </div>
+        <div class="stat-card stat-correct">
+          <div class="stat-card__value">{{ correctCount }}</div>
+          <div class="stat-card__label">✓ 正确</div>
+        </div>
+        <div class="stat-card stat-wrong">
+          <div class="stat-card__value">{{ wrongCount }}</div>
+          <div class="stat-card__label">✗ 错误</div>
+        </div>
+        <div class="stat-card stat-rate">
+          <div class="stat-card__value">{{ accuracy }}%</div>
+          <div class="stat-card__label">正确率</div>
         </div>
       </div>
 
-      <el-card shadow="never" class="table-card">
-        <el-table :data="answerData" v-loading="detailLoading" border
+      <!-- 答题表格 -->
+      <el-card class="detail-table-card" shadow="never">
+        <el-table :data="answerData" v-loading="detailLoading"
                   style="width:100%" empty-text="暂无答题记录"
                   :row-class-name="answerRowClass">
           <el-table-column label="题目" min-width="300">
             <template #default="{ row }">
               <div class="question-cell">
                 <div class="question-head">
-                  <el-tag :type="questionTagType(row.questionType)" size="small" effect="plain">
+                  <el-tag :type="questionTagType(row.questionType)" size="small" effect="plain" round>
                     {{ questionTypeLabel(row.questionType) }}
                   </el-tag>
-                  <span class="question-num">#{{ row.questionId }}</span>
                 </div>
                 <p class="question-text">{{ row.questionContent || '(题目内容未加载)' }}</p>
                 <div v-if="row.optionA" class="question-options">
@@ -61,31 +84,67 @@
                         :class="{
                           'option-chosen': opt && row.studentAnswer && opt.startsWith(row.studentAnswer + '.'),
                           'option-correct': opt && row.correctAnswer && opt.startsWith(row.correctAnswer + '.')
-                        }">{{ opt }}</span>
+                        }">
+                    {{ opt }}
+                  </span>
                 </div>
               </div>
             </template>
           </el-table-column>
-          <el-table-column label="我的答案" width="100" align="center">
+          <el-table-column label="我的答案" width="105" align="center">
             <template #default="{ row }">
               <span :class="row.isCorrect ? 'answer-ok' : 'answer-bad'">{{ row.studentAnswer || '未作答' }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="正确答案" width="100" align="center">
+          <el-table-column label="正确答案" width="105" align="center">
             <template #default="{ row }">
               <span class="correct-answer-text">{{ row.correctAnswer }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="判题" width="80" align="center">
+          <el-table-column label="判题" width="85" align="center">
             <template #default="{ row }">
-              <el-tag :type="row.isCorrect ? 'success' : 'danger'" size="small" effect="dark">
+              <el-tag :type="row.isCorrect ? 'success' : 'danger'" size="small" effect="plain" round>
                 {{ row.isCorrect ? '✓ 正确' : '✗ 错误' }}
               </el-tag>
             </template>
           </el-table-column>
           <el-table-column prop="score" label="得分" width="70" align="center" />
+          <el-table-column label="操作" width="130" align="center" fixed="right">
+            <template #default="{ row }">
+              <el-button
+                  type="warning" size="small" plain
+                  :icon="MagicStick"
+                  :loading="row._aiLoading"
+                  @click="requestAiAnalysis(row)"
+              >
+                AI 解析
+              </el-button>
+            </template>
+          </el-table-column>
         </el-table>
       </el-card>
+
+      <!-- ==================== AI 解析弹窗 ==================== -->
+      <el-dialog
+          v-model="aiDialogVisible"
+          title="🤖 AI 智能解析"
+          width="720px"
+          :close-on-click-modal="false"
+          destroy-on-close
+          class="ai-dialog"
+      >
+        <div class="ai-dialog-body" v-loading="aiDialogLoading">
+          <template v-if="aiDialogLoading">
+            <el-skeleton :rows="6" animated />
+          </template>
+          <template v-else-if="aiDialogContent">
+            <div class="ai-dialog-content" v-html="renderMarkdown(aiDialogContent)"></div>
+          </template>
+        </div>
+        <template #footer>
+          <el-button @click="aiDialogVisible = false">关闭</el-button>
+        </template>
+      </el-dialog>
     </div>
   </div>
 </template>
@@ -93,9 +152,16 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
+import { MagicStick } from '@element-plus/icons-vue'
+import { marked } from 'marked'
 import { useUserStore } from '@/stores/user'
 import { listScores, type ScoreRecord } from '@/api/score'
-import { getExamAnswers, type ExamAnswerRecord } from '@/api/examAnswer'
+import { getExamAnswers, getAiAnalysis, type ExamAnswerRecord } from '@/api/examAnswer'
+
+interface AnswerRow extends ExamAnswerRecord {
+  _aiLoading?: boolean
+  _aiAnalysis?: string
+}
 
 const userStore = useUserStore()
 
@@ -110,10 +176,14 @@ const size = ref(10)
 const showDetail = ref(false)
 const detailLoading = ref(false)
 const detailSubject = ref('')
-const answerData = ref<ExamAnswerRecord[]>([])
+const answerData = ref<AnswerRow[]>([])
 
 const correctCount = computed(() => answerData.value.filter(a => a.isCorrect).length)
 const wrongCount = computed(() => answerData.value.filter(a => !a.isCorrect).length)
+const accuracy = computed(() => {
+  if (answerData.value.length === 0) return 0
+  return Math.round((correctCount.value / answerData.value.length) * 100)
+})
 
 function questionTypeLabel(type: number): string {
   switch (type) {
@@ -126,14 +196,14 @@ function questionTypeLabel(type: number): string {
 
 function questionTagType(type: number): string {
   switch (type) {
-    case 1: return 'primary'
+    case 1: return ''
     case 2: return 'success'
     case 3: return 'warning'
     default: return 'info'
   }
 }
 
-function answerRowClass({ row }: { row: ExamAnswerRecord }): string {
+function answerRowClass({ row }: { row: AnswerRow }): string {
   return row.isCorrect ? 'detail-row-correct' : 'detail-row-wrong'
 }
 
@@ -163,7 +233,11 @@ async function showAnswers(row: ScoreRecord) {
   try {
     const res = await getExamAnswers(row.examCode)
     if (res.data.code === 0) {
-      answerData.value = res.data.data ?? []
+      answerData.value = (res.data.data ?? []).map(a => ({
+        ...a,
+        _aiLoading: false,
+        _aiAnalysis: undefined
+      }))
     } else {
       ElMessage.error(res.data.message || '获取答题详情失败')
     }
@@ -180,34 +254,249 @@ function backToList() {
   detailSubject.value = ''
 }
 
+// —— AI 解析 ——
+const aiDialogVisible = ref(false)
+const aiDialogLoading = ref(false)
+const aiDialogContent = ref('')
+
+function renderMarkdown(text: string): string {
+  return marked.parse(text, { breaks: true, gfm: true }) as string
+}
+
+async function requestAiAnalysis(row: AnswerRow) {
+  // 如果已有缓存，直接用缓存
+  if (row._aiAnalysis) {
+    aiDialogContent.value = row._aiAnalysis
+    aiDialogVisible.value = true
+    return
+  }
+
+  aiDialogVisible.value = true
+  aiDialogLoading.value = true
+  aiDialogContent.value = ''
+  row._aiLoading = true
+
+  try {
+    const res = await getAiAnalysis(row.answerId)
+    if (res.data.code === 0 && res.data.data) {
+      row._aiAnalysis = res.data.data.analysis
+      aiDialogContent.value = row._aiAnalysis!
+    } else {
+      ElMessage.error(res.data.message || '获取 AI 解析失败')
+      aiDialogVisible.value = false
+    }
+  } catch {
+    ElMessage.error('AI 解析请求失败，请稍后重试')
+    aiDialogVisible.value = false
+  } finally {
+    aiDialogLoading.value = false
+    row._aiLoading = false
+  }
+}
+
 onMounted(() => fetchList())
 </script>
 
 <style scoped>
-.score-query { display: flex; flex-direction: column; gap: 16px; }
-.table-card { border-radius: 8px; }
-.table-pagination { display: flex; justify-content: flex-end; margin-top: 16px; }
-
-/* ===== 详情视图 ===== */
-.detail-view { display: flex; flex-direction: column; gap: 16px; }
-.detail-header {
+/* ============================================
+   基础布局
+   ============================================ */
+.score-query {
   display: flex;
-  align-items: center;
-  gap: 16px;
-  flex-wrap: wrap;
+  flex-direction: column;
+  gap: 20px;
 }
-.detail-title {
+
+/* —— 列表卡片 —— */
+.list-card {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+.list-card :deep(.el-card__header) {
+  padding: 16px 20px;
+  border-bottom: 1px solid #f0f0f0;
+}
+.card-header-title {
   font-size: 16px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
-}
-.detail-summary {
-  display: flex;
-  gap: 8px;
-  margin-left: auto;
+  color: #2c3e50;
 }
 
-/* 题目单元格 */
+.table-pagination {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 16px;
+}
+
+/* ============================================
+   详情视图
+   ============================================ */
+.detail-view {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.overview-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.back-btn {
+  font-size: 14px;
+  color: #7c8db5;
+}
+.detail-subject {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* —— 概览大数字卡片 —— */
+.stat-cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+  border-radius: 14px;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s;
+}
+.stat-card:hover {
+  transform: translateY(-2px);
+}
+.stat-card__value {
+  font-size: 36px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -1px;
+}
+.stat-card__label {
+  font-size: 13px;
+  font-weight: 500;
+  margin-top: 4px;
+  opacity: 0.8;
+}
+
+.stat-total {
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  color: #3b82f6;
+}
+.stat-correct {
+  background: linear-gradient(135deg, #edf7ee, #d4edda);
+  color: #4caf50;
+}
+.stat-wrong {
+  background: linear-gradient(135deg, #fef0ef, #fde2e2);
+  color: #e57373;
+}
+.stat-rate {
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+  color: #8b5cf6;
+}
+
+/* —— 详情表格卡片 —— */
+.detail-table-card {
+  border-radius: 12px;
+  border: none;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+}
+
+/* ============================================
+   AI 解析弹窗
+   ============================================ */
+.ai-dialog-body {
+  min-height: 120px;
+}
+.ai-dialog-content {
+  font-size: 15px;
+  line-height: 2;
+  color: #374151;
+  word-break: break-word;
+  overflow-wrap: break-word;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+/* Markdown 渲染元素样式 */
+.ai-dialog-content :deep(p) {
+  margin: 0 0 12px 0;
+}
+.ai-dialog-content :deep(strong) {
+  font-weight: 700;
+  color: #1e293b;
+}
+.ai-dialog-content :deep(em) {
+  font-style: italic;
+  color: #64748b;
+}
+.ai-dialog-content :deep(ul),
+.ai-dialog-content :deep(ol) {
+  margin: 8px 0 12px 0;
+  padding-left: 24px;
+}
+.ai-dialog-content :deep(li) {
+  margin-bottom: 4px;
+}
+.ai-dialog-content :deep(code) {
+  background: #f1f5f9;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 13px;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  color: #e11d48;
+}
+.ai-dialog-content :deep(pre) {
+  background: #1e293b;
+  color: #e2e8f0;
+  padding: 12px 16px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 8px 0 12px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.ai-dialog-content :deep(pre code) {
+  background: none;
+  color: inherit;
+  padding: 0;
+  font-size: inherit;
+}
+.ai-dialog-content :deep(blockquote) {
+  border-left: 3px solid #93c5fd;
+  padding: 4px 16px;
+  margin: 16px 0;
+  color: #64748b;
+  background: #f8fafc;
+  border-radius: 0 6px 6px 0;
+}
+.ai-dialog-content :deep(h1),
+.ai-dialog-content :deep(h2),
+.ai-dialog-content :deep(h3),
+.ai-dialog-content :deep(h4) {
+  margin: 16px 0 8px 0;
+  color: #1e293b;
+  line-height: 1.4;
+}
+.ai-dialog-content :deep(h2) { font-size: 17px; }
+.ai-dialog-content :deep(h3) { font-size: 16px; }
+.ai-dialog-content :deep(hr) {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 16px 0;
+}
+
+/* ============================================
+   题目单元格
+   ============================================ */
 .question-cell {
   text-align: left;
   padding: 4px 0;
@@ -216,47 +505,89 @@ onMounted(() => fetchList())
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-bottom: 6px;
-}
-.question-num {
-  font-size: 12px;
-  color: var(--color-text-muted);
-  font-weight: 600;
+  margin-bottom: 8px;
 }
 .question-text {
-  margin: 0 0 6px 0;
-  line-height: 1.7;
+  margin: 0 0 8px 0;
+  line-height: 1.8;
   font-size: 14px;
-  color: var(--color-text-title);
+  color: #1e293b;
 }
 .question-options {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px 16px;
+  gap: 8px 20px;
 }
 .option-item {
+  position: relative;
   font-size: 13px;
-  color: var(--color-text-body);
-  padding: 2px 8px;
-  border-radius: 4px;
+  color: #64748b;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 1.5px solid transparent;
+  transition: all 0.2s;
 }
+
+/* 选中的选项 — 莫兰迪淡红 */
 .option-chosen {
-  background: #fef2f2;
-  color: #dc2626;
+  background: #fef0f0;
+  border-color: #f4c2c2;
+  color: #b45353;
   font-weight: 600;
 }
+
+/* 正确的选项 — 莫兰迪淡绿 */
 .option-correct {
-  background: #f0fdf4;
-  color: #059669;
+  background: #f0faf4;
+  border-color: #b7d9c2;
+  color: #3d8b5e;
   font-weight: 600;
+}
+
+/* 同时选中且正确 */
+.option-chosen.option-correct {
+  background: #dcfce7;
+  border-color: #86dba8;
+  color: #16a34a;
 }
 
 /* 答案文字 */
-.answer-ok { color: #059669; font-weight: 600; }
-.answer-bad { color: #dc2626; font-weight: 600; }
-.correct-answer-text { font-weight: 600; color: #059669; }
+.answer-ok {
+  color: #4caf50;
+  font-weight: 700;
+  font-size: 14px;
+}
+.answer-bad {
+  color: #e57373;
+  font-weight: 700;
+  font-size: 14px;
+}
+.correct-answer-text {
+  font-weight: 700;
+  font-size: 14px;
+  color: #4caf50;
+}
 
-/* 行高亮 */
-:deep(.detail-row-correct) { --el-table-tr-bg: #f6fef9; }
-:deep(.detail-row-wrong) { --el-table-tr-bg: #fef6f6; }
+/* ============================================
+   行背景 — 莫兰迪淡色系
+   ============================================ */
+:deep(.detail-row-correct) {
+  --el-table-tr-bg: #f6fbf8;
+}
+:deep(.detail-row-correct:hover) {
+  --el-table-tr-bg: #ecf7f0;
+}
+:deep(.detail-row-wrong) {
+  --el-table-tr-bg: #fdf7f7;
+}
+:deep(.detail-row-wrong:hover) {
+  --el-table-tr-bg: #fbeeee;
+}
+
+/* 响应式 */
+@media (max-width: 768px) {
+  .stat-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
 </style>
