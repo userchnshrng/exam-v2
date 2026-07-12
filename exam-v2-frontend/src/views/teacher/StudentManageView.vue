@@ -54,8 +54,8 @@
       </div>
     </el-card>
 
-    <!-- ======== 新增 / 编辑 弹窗 ======== -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="640px" :close-on-click-modal="false" :close-on-press-escape="false">
+    <!-- ======== 新增 / 编辑 弹窗（仅管理员） ======== -->
+    <el-dialog v-if="!isTeacherRole" v-model="dialogVisible" :title="dialogTitle" width="640px" :close-on-click-modal="false" :close-on-press-escape="false">
       <el-form ref="formRef" :model="form" :rules="formRules" label-width="80px">
         <el-row :gutter="16">
           <el-col :span="12">
