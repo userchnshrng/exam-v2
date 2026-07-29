@@ -13,7 +13,7 @@
     </el-card>
 
     <el-card class="list-card" shadow="never">
-      <el-table :data="filteredExams" v-loading="loading" stripe style="width:100%">
+      <el-table :data="allExams" v-loading="loading" stripe style="width:100%">
         <el-table-column prop="examCode" label="编号" width="90" align="center" />
         <el-table-column prop="source" label="科目" width="130" />
         <el-table-column prop="description" label="考试名称" min-width="180" show-overflow-tooltip />
@@ -42,7 +42,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { listExams, type ExamManage } from '@/api/exam'
 
@@ -54,18 +54,10 @@ const total = ref(0)
 const page = ref(1)
 const size = ref(10)
 
-const filteredExams = computed(() => {
-  if (!keyword.value) return allExams.value
-  const kw = keyword.value.toLowerCase()
-  return allExams.value.filter(e =>
-    e.source?.toLowerCase().includes(kw) ||
-    e.description?.toLowerCase().includes(kw))
-})
-
 async function fetchList() {
   loading.value = true
   try {
-    const res = await listExams('', page.value, size.value)
+    const res = await listExams(keyword.value, page.value, size.value)
     if (res.data.code === 0 && res.data.data) {
       allExams.value = res.data.data.records
       total.value = res.data.data.total
