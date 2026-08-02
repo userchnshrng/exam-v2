@@ -181,6 +181,14 @@ public class ExamAnswerServiceImpl implements ExamAnswerService {
 
     private String callDeepSeekApi(String questionInfo, ExamAnswer answer) throws Exception {
         RestTemplate restTemplate = new RestTemplate();
+        // 禁用默认的错误处理器，避免 4xx/5xx 直接抛异常，让我们自己解析响应体
+        restTemplate.setErrorHandler(new org.springframework.web.client.DefaultResponseErrorHandler() {
+            @Override
+            public void handleError(java.net.URI url, org.springframework.http.HttpMethod method,
+                                    org.springframework.http.client.ClientHttpResponse response) throws java.io.IOException {
+                // 不抛异常，让调用方自行判断
+            }
+        });
 
         Map<String, Object> systemMsg = new HashMap<>();
         systemMsg.put("role", "system");
@@ -204,12 +212,24 @@ public class ExamAnswerServiceImpl implements ExamAnswerService {
         ResponseEntity<String> response = restTemplate.postForEntity(
                 deepseekBaseUrl + "/chat/completions", request, String.class);
 
-        if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
+        // 先解析响应体，提取可能的错误信息
+        String responseBody = response.getBody();
+        if (responseBody != null) {
             ObjectMapper mapper = new ObjectMapper();
-            JsonNode root = mapper.readTree(response.getBody());
-            JsonNode choices = root.path("choices");
-            if (choices.isArray() && choices.size() > 0) {
-                return choices.get(0).path("message").path("content").asText();
+            JsonNode root = mapper.readTree(responseBody);
+
+            // 检查 API 是否返回了错误信息
+            JsonNode errorNode = root.path("error");
+            if (!errorNode.isMissingNode()) {
+                String errorMsg = errorNode.path("message").asText("未知 API 错误");
+                throw new RuntimeException("AI API 错误: " + errorMsg);
+            }
+
+            if (response.getStatusCode().is2xxSuccessful()) {
+                JsonNode choices = root.path("choices");
+                if (choices.isArray() && choices.size() > 0) {
+                    return choices.get(0).path("message").path("content").asText();
+                }
             }
         }
 

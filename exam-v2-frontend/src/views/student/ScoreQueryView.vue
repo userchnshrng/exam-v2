@@ -128,9 +128,10 @@
       <el-dialog
           v-model="aiDialogVisible"
           title="🤖 AI 智能解析"
-          width="720px"
+          :width="dialogWidth"
           :close-on-click-modal="false"
           destroy-on-close
+          draggable
           class="ai-dialog"
       >
         <div class="ai-dialog-body" v-loading="aiDialogLoading">
@@ -141,6 +142,10 @@
             <div class="ai-dialog-content" v-html="renderMarkdown(aiDialogContent)"></div>
           </template>
         </div>
+        <!-- 缩放拖拽手柄 -->
+        <div class="resize-handle" @mousedown.left="startResize">
+          <span></span><span></span><span></span>
+        </div>
         <template #footer>
           <el-button @click="aiDialogVisible = false">关闭</el-button>
         </template>
@@ -150,7 +155,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { MagicStick } from '@element-plus/icons-vue'
 import { marked } from 'marked'
@@ -258,6 +263,49 @@ function backToList() {
 const aiDialogVisible = ref(false)
 const aiDialogLoading = ref(false)
 const aiDialogContent = ref('')
+const dialogWidth = ref('720px')
+
+// —— 拖拽缩放 ——
+let resizeCleanup: (() => void) | null = null
+
+function startResize(e: MouseEvent) {
+  const dialogEl = (e.target as HTMLElement).closest('.el-dialog') as HTMLElement | null
+  if (!dialogEl) return
+
+  const startX = e.clientX
+  const startY = e.clientY
+  const startW = dialogEl.offsetWidth
+  const startH = dialogEl.offsetHeight
+
+  document.body.style.cursor = 'nwse-resize'
+  document.body.style.userSelect = 'none'
+
+  const onMove = (ev: MouseEvent) => {
+    const newW = Math.max(520, Math.min(window.innerWidth - 40, startW + ev.clientX - startX))
+    const newH = Math.max(320, Math.min(window.innerHeight - 60, startH + ev.clientY - startY))
+    dialogWidth.value = `${newW}px`
+    dialogEl.style.setProperty('--el-dialog-height', `${newH}px`)
+  }
+
+  const onUp = () => {
+    document.removeEventListener('mousemove', onMove)
+    document.removeEventListener('mouseup', onUp)
+    document.body.style.cursor = ''
+    document.body.style.userSelect = ''
+    resizeCleanup = null
+  }
+
+  document.addEventListener('mousemove', onMove)
+  document.addEventListener('mouseup', onUp)
+  resizeCleanup = onUp
+  e.preventDefault()
+}
+
+onUnmounted(() => {
+  resizeCleanup?.()
+  document.body.style.cursor = ''
+  document.body.style.userSelect = ''
+})
 
 function renderMarkdown(text: string): string {
   return marked.parse(text, { breaks: true, gfm: true }) as string
@@ -412,8 +460,25 @@ onMounted(() => fetchList())
 /* ============================================
    AI 解析弹窗
    ============================================ */
+/* 对话框高度跟随缩放 */
+.ai-dialog :deep(.el-dialog) {
+  height: var(--el-dialog-height, auto);
+  display: flex;
+  flex-direction: column;
+}
+.ai-dialog :deep(.el-dialog__body) {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
 .ai-dialog-body {
+  flex: 1;
   min-height: 120px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 .ai-dialog-content {
   font-size: 15px;
@@ -421,10 +486,45 @@ onMounted(() => fetchList())
   color: #374151;
   word-break: break-word;
   overflow-wrap: break-word;
-  max-height: 60vh;
+  flex: 1;
   overflow-y: auto;
   padding: 4px 0;
 }
+
+/* —— 缩放手柄 —— */
+.resize-handle {
+  position: absolute;
+  right: 8px;
+  bottom: 8px;
+  width: 22px;
+  height: 22px;
+  cursor: nwse-resize;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 3px;
+  padding: 3px;
+  opacity: 0.35;
+  transition: opacity 0.2s;
+  border-radius: 2px;
+}
+.resize-handle:hover {
+  opacity: 0.8;
+}
+.resize-handle:active {
+  opacity: 1;
+}
+.resize-handle span {
+  display: block;
+  height: 1.5px;
+  background: #6b7280;
+  border-radius: 1px;
+}
+.resize-handle span:nth-child(1) { width: 7px; }
+.resize-handle span:nth-child(2) { width: 12px; }
+.resize-handle span:nth-child(3) { width: 17px; }
 
 /* Markdown 渲染元素样式 */
 .ai-dialog-content :deep(p) {
