@@ -24,11 +24,10 @@ public class ExamAnswerServiceImpl implements ExamAnswerService {
     private final FillQuestionMapper fillQuestionMapper;
     private final JudgeQuestionMapper judgeQuestionMapper;
 
-    @Value("${deepseek.api.key}")
-    private String deepseekApiKey;
-
-    @Value("${deepseek.api.base-url}")
-    private String deepseekBaseUrl;
+    // DeepSeek 密钥与地址从环境变量读取，避免硬编码进代码或配置文件
+    private final String deepseekApiKey = System.getenv("DEEPSEEK-API-KEY");
+    private final String deepseekBaseUrl =
+            System.getenv().getOrDefault("DEEPSEEK-BASE-URL", "https://api.deepseek.com");
 
     @Value("${deepseek.api.model}")
     private String deepseekModel;
@@ -180,6 +179,10 @@ public class ExamAnswerServiceImpl implements ExamAnswerService {
     }
 
     private String callDeepSeekApi(String questionInfo, ExamAnswer answer) throws Exception {
+        if (deepseekApiKey == null || deepseekApiKey.isBlank()) {
+            throw new RuntimeException("环境变量 DEEPSEEK-API-KEY 未配置");
+        }
+
         RestTemplate restTemplate = new RestTemplate();
         // 禁用默认的错误处理器，避免 4xx/5xx 直接抛异常，让我们自己解析响应体
         restTemplate.setErrorHandler(new org.springframework.web.client.DefaultResponseErrorHandler() {

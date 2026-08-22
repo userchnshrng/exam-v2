@@ -20,6 +20,4 @@ spring.servlet.multipart:
 
 deepseek:
   api:
-    key: ${DEEPSEEK_API_KEY:your_deepseek_key_here}
-    base-url: https://api.deepseek.com
-    model: deepseek-v4-flash
+    model: deepseek-v4-flash-vision-exp
