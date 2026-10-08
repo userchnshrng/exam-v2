@@ -204,6 +204,7 @@ public class ExamAnswerServiceImpl implements ExamAnswerService {
         Map<String, Object> body = new HashMap<>();
         body.put("model", deepseekModel);
         body.put("messages", List.of(systemMsg, userMsg));
+        body.put("thinking", Map.of("type", "disabled"));
         body.put("temperature", 0.7);
         body.put("max_tokens", 800);
 
@@ -231,7 +232,11 @@ public class ExamAnswerServiceImpl implements ExamAnswerService {
             if (response.getStatusCode().is2xxSuccessful()) {
                 JsonNode choices = root.path("choices");
                 if (choices.isArray() && choices.size() > 0) {
-                    return choices.get(0).path("message").path("content").asText();
+                    String content = choices.get(0).path("message").path("content").asText("");
+                    if (!content.isBlank()) {
+                        return content;
+                    }
+                    throw new RuntimeException("AI API 返回了空解析内容");
                 }
             }
         }
