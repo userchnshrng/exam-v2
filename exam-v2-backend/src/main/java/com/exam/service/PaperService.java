@@ -1,8 +1,6 @@
 package com.exam.service;
 
-import com.exam.common.PageResult;
 import com.exam.dto.SubmitAnswerRequest;
-import com.exam.entity.Score;
 import com.exam.vo.ExamQuestionVO;
 import com.exam.vo.SubmitResultVO;
 

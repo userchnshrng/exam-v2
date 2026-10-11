@@ -42,7 +42,7 @@ public class NoticeServiceImpl implements NoticeService {
 
     @Override
     public Notice update(Notice notice) {
-        Notice existing = getById(notice.getNoticeId());
+        getById(notice.getNoticeId()); // 校验存在
         noticeMapper.update(notice);
         return notice;
     }
