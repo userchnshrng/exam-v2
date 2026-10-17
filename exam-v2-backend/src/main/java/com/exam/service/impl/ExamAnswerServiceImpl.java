@@ -121,7 +121,7 @@ public class ExamAnswerServiceImpl implements ExamAnswerService {
 
         // 4. 尝试调用 DeepSeek API
         try {
-            return callDeepSeekApi(questionInfo.toString(), answer);
+            return callDeepSeekApi(questionInfo.toString());
         } catch (Exception e) {
             // 降级：返回本地生成的解析
             return generateFallbackAnalysis(answer);
@@ -178,7 +178,7 @@ public class ExamAnswerServiceImpl implements ExamAnswerService {
         return sb;
     }
 
-    private String callDeepSeekApi(String questionInfo, ExamAnswer answer) throws Exception {
+    private String callDeepSeekApi(String questionInfo) throws Exception {
         if (deepseekApiKey == null || deepseekApiKey.isBlank()) {
             throw new RuntimeException("环境变量 DEEPSEEK-API-KEY 未配置");
         }

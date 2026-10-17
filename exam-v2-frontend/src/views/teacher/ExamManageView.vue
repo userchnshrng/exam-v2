@@ -348,8 +348,6 @@ function composeByType(type: number) { return composeData.value.filter(q => q.qu
 
 function checkedCount(type: number) { return composeByType(type).filter(q => isComposeChecked(q)).length }
 
-function typeLabel(type: number) { return type === 1 ? '选择' : type === 2 ? '填空' : '判断' }
-
 function tabLabel(tab: string) { return tab === '1' ? '选择题' : tab === '2' ? '填空题' : '判断题' }
 const selectedScore = computed(() => composeData.value.filter(isComposeChecked).reduce((sum, q) => sum + (q.score || 0), 0))
 

@@ -117,7 +117,6 @@ const userStore = useUserStore()
 
 const examCode = Number(route.params.examCode)
 const currentAnswer = ref('')
-const loading = ref(false)
 
 // 题型辅助
 function tagType(t: number) { return t === 1 ? '' : t === 2 ? 'success' : 'warning' }
@@ -151,35 +150,29 @@ watch(() => examStore.isTimeout, (val) => {
 })
 
 async function initExam() {
-  loading.value = true
-  try {
-    // 获取考试信息
-    const examRes = await getExamById(examCode)
-    if (examRes.data.code !== 0 || !examRes.data.data) {
-      ElMessage.error('考试不存在')
-      router.replace('/student/my-exams')
-      return
-    }
-    const examInfo = examRes.data.data
-
-    // 获取题目
-    const qRes = await getExamQuestions(examCode)
-    if (qRes.data.code !== 0 || !qRes.data.data || !qRes.data.data.length) {
-      if (qRes.data.code !== 0) {
-        ElMessage.error(qRes.data.message || '获取题目失败')
-      } else {
-        ElMessage.error('该考试暂无题目，请联系教师确认试卷已组卷')
-      }
-      router.replace('/student/my-exams')
-      return
-    }
-
-    examStore.startExam(examInfo, qRes.data.data)
-    currentAnswer.value = ''
-
-  } finally {
-    loading.value = false
+  // 获取考试信息
+  const examRes = await getExamById(examCode)
+  if (examRes.data.code !== 0 || !examRes.data.data) {
+    ElMessage.error('考试不存在')
+    router.replace('/student/my-exams')
+    return
   }
+  const examInfo = examRes.data.data
+
+  // 获取题目
+  const qRes = await getExamQuestions(examCode)
+  if (qRes.data.code !== 0 || !qRes.data.data || !qRes.data.data.length) {
+    if (qRes.data.code !== 0) {
+      ElMessage.error(qRes.data.message || '获取题目失败')
+    } else {
+      ElMessage.error('该考试暂无题目，请联系教师确认试卷已组卷')
+    }
+    router.replace('/student/my-exams')
+    return
+  }
+
+  examStore.startExam(examInfo, qRes.data.data)
+  currentAnswer.value = ''
 }
 
 async function handleSubmit() {
