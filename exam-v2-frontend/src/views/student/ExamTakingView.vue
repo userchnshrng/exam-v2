@@ -177,21 +177,6 @@ async function initExam() {
     examStore.startExam(examInfo, qRes.data.data)
     currentAnswer.value = ''
 
-    // ===== 诊断日志：页面加载时输出关键数据摘要（上线前删除） =====
-    console.group('🔍 [考试诊断] 页面初始化')
-    console.log('用户 userId:', userStore.userId, '| username:', userStore.username, '| role:', userStore.role)
-    console.log('考试 examCode:', examCode, '| description:', examInfo.description, '| source:', examInfo.source)
-    console.log('题目数:', qRes.data.data.length)
-    console.log('前 5 题 questionId:', qRes.data.data.slice(0, 5).map((q: any) => ({ id: q.questionId, type: q.questionType, subject: q.subject })))
-    // 检测是否有跨题型重复的 questionId
-    const idMap = new Map<string, number>()
-    qRes.data.data.forEach((q: any) => {
-      const k = `${q.questionType}:${q.questionId}`
-      idMap.set(k, (idMap.get(k) || 0) + 1)
-    })
-    const dupes = [...idMap.entries()].filter(([, c]) => c > 1)
-    if (dupes.length) console.warn('⚠️ 发现同一试卷内 (questionType:questionId) 重复:', dupes)
-    console.groupEnd()
   } finally {
     loading.value = false
   }
@@ -234,31 +219,7 @@ async function handleSubmit() {
     return
   }
 
-  // ========== 阶段 3：调试输出（上线前删除） ==========
-  const payload = { examCode, studentId, answers }
-  console.group('📦 [交卷调试] 请求 Payload')
-  console.log('URL:', `/api/paper/${examCode}/submit`)
-  console.log('Body:', JSON.stringify(payload, null, 2))
-  console.table(payload.answers.slice(0, 10).map(a => ({
-    questionType: a.questionType,
-    questionId: a.questionId,
-    answer: a.answer || '(空)'
-  })))
-  console.log('用户信息:', {
-    rawUsername: userStore.username,
-    userId: userStore.userId,
-    role: userStore.role,
-    displayName: userStore.displayName,
-    localStorageUser: localStorage.getItem('exam-v2-user')
-  })
-  console.log('考试信息:', {
-    examCode,
-    totalQuestions: examStore.totalQuestions,
-    answeredCount: examStore.answeredCount
-  })
-  console.groupEnd()
-
-  // ========== 阶段 4：发送请求 ==========
+  // ========== 阶段 3：发送请求 ==========
   try {
     const res = await submitExam(examCode, { examCode, studentId, answers })
     examStore.markSubmitted()
@@ -284,7 +245,6 @@ async function handleSubmit() {
     } else {
       detail = '未知网络错误'
     }
-    console.error('❌ 交卷失败详情:', detail, err)
     ElMessage.error(`提交失败：${detail}`)
   }
 }

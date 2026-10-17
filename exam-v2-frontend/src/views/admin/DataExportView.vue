@@ -17,7 +17,7 @@
 
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
-import { Document, User, DataAnalysis, Tickets } from '@element-plus/icons-vue'
+import { User, DataAnalysis, Tickets } from '@element-plus/icons-vue'
 import { downloadExport } from '@/api/importExport'
 import { ref } from 'vue'
 

@@ -235,8 +235,6 @@ const editLoading = ref(false)
 const editStudentName = ref('')
 const editSubject = ref('')
 const editAnswers = ref<ExamAnswerRecord[]>([])
-let editExamCode = 0
-let editStudentId = 0
 
 function questionTypeLabel(type: number): string {
   switch (type) {
@@ -399,8 +397,6 @@ async function openEdit(row: StudentScoreItem) {
   editVisible.value = true
   editStudentName.value = row.studentName
   editSubject.value = row.subject
-  editExamCode = row.examCode
-  editStudentId = row.studentId
   editLoading.value = true
   try {
     const res = await getStudentExamAnswers(row.examCode, row.studentId)
@@ -421,8 +417,6 @@ function clearEdit() {
   editAnswers.value = []
   editStudentName.value = ''
   editSubject.value = ''
-  editExamCode = 0
-  editStudentId = 0
 }
 
 // ===== 保存单条答题修改 =====
