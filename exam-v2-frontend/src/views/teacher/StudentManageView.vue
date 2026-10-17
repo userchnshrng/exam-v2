@@ -29,8 +29,9 @@
         <el-table-column prop="clazz" label="班级" width="70" align="center" />
         <el-table-column prop="institute" label="学院" width="140" show-overflow-tooltip />
         <el-table-column prop="tel" label="电话" width="130" />
-        <el-table-column v-if="!isTeacherRole" label="操作" width="160" align="center" fixed="right">
+        <el-table-column v-if="!isTeacherRole" label="操作" width="240" align="center" fixed="right">
           <template #default="{ row }">
+            <el-button link type="success" size="small" @click="openExamRecords(row)">考试记录</el-button>
             <el-button link type="primary" size="small" @click="openEdit(row)">编辑</el-button>
             <el-popconfirm title="确定删除该学生？" @confirm="handleDelete(row.studentId)">
               <template #reference>
@@ -53,6 +54,23 @@
         />
       </div>
     </el-card>
+
+    <el-dialog v-if="!isTeacherRole" v-model="recordsVisible" :title="recordsTitle" width="900px" :close-on-click-modal="false">
+      <el-alert title="每条成绩对应一次考试记录。删除仅影响选中记录；该场考试没有其他次成绩时，同时清理其答卷。" type="warning" :closable="false" show-icon style="margin-bottom:16px" />
+      <el-table :data="examRecords" v-loading="recordsLoading" border max-height="460" empty-text="该学生暂无已参加的考试">
+        <el-table-column label="记录编号" width="100"><template #default="{ row }">{{ row.scoreId ?? '仅答卷' }}</template></el-table-column>
+        <el-table-column prop="examCode" label="考试编号" width="110" />
+        <el-table-column label="考试名称" min-width="180"><template #default="{ row }">{{ row.examName || `历史考试（${row.examCode}）` }}</template></el-table-column>
+        <el-table-column label="科目" min-width="130"><template #default="{ row }">{{ row.subject || '未记录' }}</template></el-table-column>
+        <el-table-column label="答题日期" width="120"><template #default="{ row }">{{ row.answerDate || '未记录' }}</template></el-table-column>
+        <el-table-column label="得分" width="70" align="center"><template #default="{ row }">{{ row.etScore ?? '-' }}</template></el-table-column>
+        <el-table-column label="操作" width="130" align="center"><template #default="{ row }">
+          <el-popconfirm title="确定删除本条考试记录？此操作不可恢复。" width="260" @confirm="deleteExamRecord(row)">
+            <template #reference><el-button type="danger" link :disabled="deletingRecord">删除考试记录</el-button></template>
+          </el-popconfirm>
+        </template></el-table-column>
+      </el-table>
+    </el-dialog>
 
     <!-- ======== 新增 / 编辑 弹窗（仅管理员） ======== -->
     <el-dialog v-if="!isTeacherRole" v-model="dialogVisible" :title="dialogTitle" width="640px" :close-on-click-modal="false" :close-on-press-escape="false">
@@ -136,6 +154,7 @@ import { useRoute } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { listStudents, createStudent, updateStudent, deleteStudent, type Student } from '@/api/student'
+import { getStudentExamRecords, deleteScoreRecord, deleteUnscoredAnswers, type StudentExamRecord } from '@/api/score'
 
 const route = useRoute()
 const isTeacherRole = computed(() => route.path.startsWith('/teacher'))
@@ -145,6 +164,56 @@ const searchForm = reactive({ keyword: '', page: 1, size: 10 })
 const loading = ref(false)
 const tableData = ref<Student[]>([])
 const total = ref(0)
+
+const recordsVisible = ref(false)
+const recordsLoading = ref(false)
+const recordStudent = ref<Student | null>(null)
+const examRecords = ref<StudentExamRecord[]>([])
+const deletingRecord = ref(false)
+const recordsTitle = computed(() => `${recordStudent.value?.studentName || ''}（${recordStudent.value?.studentId || ''}）的考试记录`)
+let recordRequest = 0
+
+async function loadExamRecords() {
+  const studentId = recordStudent.value?.studentId
+  if (studentId == null) return
+  const request = ++recordRequest
+  recordsLoading.value = true
+  try {
+    const res = await getStudentExamRecords(studentId)
+    if (request !== recordRequest) return
+    if (res.data.code === 0) examRecords.value = res.data.data || []
+    else ElMessage.error(res.data.message || '获取考试记录失败')
+  } catch {
+    // 网络错误由公共请求处理器提示。
+  } finally {
+    if (request === recordRequest) recordsLoading.value = false
+  }
+}
+
+async function openExamRecords(student: Student) {
+  recordStudent.value = student
+  examRecords.value = []
+  recordsVisible.value = true
+  await loadExamRecords()
+}
+
+async function deleteExamRecord(record: StudentExamRecord) {
+  const studentId = recordStudent.value?.studentId
+  if (studentId == null || deletingRecord.value) return
+  deletingRecord.value = true
+  try {
+    const res = record.scoreId == null
+      ? await deleteUnscoredAnswers(studentId, record.examCode)
+      : await deleteScoreRecord(record.scoreId)
+    if (res.data.code !== 0) { ElMessage.error(res.data.message || '删除考试记录失败'); return }
+    ElMessage.success('已删除本条考试记录')
+    if (recordStudent.value?.studentId === studentId) await loadExamRecords()
+  } catch {
+    // 网络错误由公共请求处理器提示。
+  } finally {
+    deletingRecord.value = false
+  }
+}
 
 async function fetchList() {
   loading.value = true

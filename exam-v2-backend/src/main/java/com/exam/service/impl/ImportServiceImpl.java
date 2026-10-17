@@ -13,7 +13,6 @@ import com.exam.mapper.StudentMapper;
 import com.exam.mapper.TeacherMapper;
 import com.exam.service.ImportService;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.stereotype.Service;
 
 import java.io.ByteArrayInputStream;
@@ -181,6 +180,13 @@ public class ImportServiceImpl implements ImportService {
                     return;
                 }
 
+                answer = normalizeJudgeAnswer(answer);
+                if (answer == null) {
+                    result[1] = (Integer) result[1] + 1;
+                    rowErrors.add("第" + rowNum + "行: 判断题答案必须为 T/F、正确/错误、对/错或 1/0");
+                    return;
+                }
+
                 JudgeQuestion q = new JudgeQuestion();
                 q.setSubject(subject);
                 q.setQuestion(question);
@@ -188,12 +194,12 @@ public class ImportServiceImpl implements ImportService {
                 q.setAnalysis(analysis);
                 q.setScore(parseScore(scoreStr, 2));
                 q.setSection(section);
-                q.setLevel(level);
+                q.setLevel(normalizeQuestionLevel(level));
                 judgeMapper.insert(q);
                 result[0] = (Integer) result[0] + 1;
             } catch (Exception e) {
                 result[1] = (Integer) result[1] + 1;
-                rowErrors.add("第" + rowNum + "行插入失败: " + e.getMessage());
+                rowErrors.add("第" + rowNum + "行插入失败: " + conciseDatabaseError(e));
             }
         });
     }
@@ -286,11 +292,13 @@ public class ImportServiceImpl implements ImportService {
         Map<String, Object> result = new LinkedHashMap<>();
         int success = 0, fail = 0;
         List<String> errors = new ArrayList<>();
-        try (Workbook wb = new XSSFWorkbook(new ByteArrayInputStream(bytes))) {
+        try (Workbook wb = WorkbookFactory.create(new ByteArrayInputStream(bytes))) {
             Sheet sheet = wb.getSheetAt(0);
-            for (int i = 1; i <= sheet.getLastRowNum(); i++) { // 跳过表头
+            int firstRow = sheet.getFirstRowNum();
+            if (isHeaderRow(sheet.getRow(firstRow))) firstRow++;
+            for (int i = firstRow; i <= sheet.getLastRowNum(); i++) {
                 Row row = sheet.getRow(i);
-                if (row == null) continue;
+                if (row == null || isBlankRow(row) || isSummaryRow(row)) continue;
                 int[] counter = {0, 0};
                 List<String> rowErrors = new ArrayList<>();
                 handler.handle(row, i + 1, counter, rowErrors);
@@ -300,6 +308,10 @@ public class ImportServiceImpl implements ImportService {
             }
         } catch (Exception e) {
             result.put("error", "文件解析失败: " + e.getMessage());
+            result.put("success", 0);
+            result.put("fail", 1);
+            result.put("total", 1);
+            result.put("errors", List.of("文件解析失败: " + e.getMessage()));
             return result;
         }
         result.put("success", success);
@@ -340,6 +352,65 @@ public class ImportServiceImpl implements ImportService {
         } catch (Exception e) {
             return 0;
         }
+    }
+
+    private boolean isHeaderRow(Row row) {
+        if (row == null) return false;
+        Set<String> headers = Set.of("姓名", "科目", "题目", "问题", "描述", "考试名称", "教师姓名", "学生姓名");
+        for (int i = 0; i < Math.min(row.getLastCellNum(), 3); i++) {
+            String value = getCell(row, i);
+            if (value != null && headers.contains(value.replace(" ", ""))) return true;
+        }
+        return false;
+    }
+
+    private boolean isBlankRow(Row row) {
+        if (row.getFirstCellNum() < 0) return true;
+        for (int i = row.getFirstCellNum(); i < row.getLastCellNum(); i++) {
+            String value = getCell(row, i);
+            if (value != null && !value.isBlank()) return false;
+        }
+        return true;
+    }
+
+    private boolean isSummaryRow(Row row) {
+        String firstCell = getCell(row, 0);
+        String secondCell = getCell(row, 1);
+        return (secondCell == null || secondCell.isBlank()) && firstCell != null
+                && (firstCell.contains("总计") || firstCell.contains("合计"));
+    }
+
+    private String normalizeJudgeAnswer(String answer) {
+        if (answer == null) return null;
+        return switch (answer.trim().toUpperCase(Locale.ROOT)) {
+            case "T", "TRUE", "1", "正确", "对", "是" -> "T";
+            case "F", "FALSE", "0", "错误", "错", "否" -> "F";
+            default -> null;
+        };
+    }
+
+    private String normalizeQuestionLevel(String level) {
+        if (level == null || level.isBlank()) return null;
+        String normalized = level.trim();
+        return switch (normalized) {
+            case "1", "非常简单", "很简单" -> "1";
+            case "2", "简单", "较简单", "容易" -> "2";
+            case "3", "中等", "一般" -> "3";
+            case "4", "较难" -> "4";
+            case "5", "困难", "很难", "非常困难" -> "5";
+            default -> throw new IllegalArgumentException("难度必须为1-5或简单/中等/较难/困难");
+        };
+    }
+
+    private String conciseDatabaseError(Exception error) {
+        String message = error.getMessage();
+        if (message == null || message.isBlank()) return "数据库写入失败";
+        if (message.contains("Data too long for column")) return "字段内容超过数据库长度限制";
+        if (message.contains("Duplicate entry")) return "数据重复";
+        if (message.contains("cannot be null")) return "存在必填字段为空";
+        int causeIndex = message.lastIndexOf("### Cause:");
+        if (causeIndex >= 0) message = message.substring(causeIndex + "### Cause:".length()).trim();
+        return message.length() > 160 ? message.substring(0, 160) + "…" : message;
     }
 
     /** 解析分值，<=0 或解析失败时使用默认值 */

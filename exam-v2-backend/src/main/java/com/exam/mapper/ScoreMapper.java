@@ -34,6 +34,28 @@ public interface ScoreMapper {
     @Select("SELECT * FROM score WHERE scoreId = #{scoreId}")
     Score findById(@Param("scoreId") Integer scoreId);
 
+    @Delete("DELETE FROM score WHERE scoreId = #{scoreId}")
+    int deleteById(@Param("scoreId") Integer scoreId);
+
+    @Select("SELECT COUNT(*) FROM score WHERE examCode = #{examCode} AND studentId = #{studentId}")
+    long countByExamAndStudent(@Param("examCode") Integer examCode, @Param("studentId") Integer studentId);
+
+    /** 每次成绩独立展示；兼容只有答卷、没有成绩的历史记录。 */
+    @Select("""
+            SELECT s.scoreId, s.examCode, COALESCE(e.source, s.subject) AS subject,
+                   e.description AS examName, s.answerDate, s.etScore
+            FROM score s LEFT JOIN exam_manage e ON e.examCode = s.examCode
+            WHERE s.studentId = #{studentId}
+            UNION ALL
+            SELECT NULL AS scoreId, a.examCode, e.source AS subject,
+                   e.description AS examName, NULL AS answerDate, NULL AS etScore
+            FROM (SELECT DISTINCT examCode FROM exam_answer WHERE studentId = #{studentId}) a
+            LEFT JOIN exam_manage e ON e.examCode = a.examCode
+            WHERE NOT EXISTS (SELECT 1 FROM score s WHERE s.examCode = a.examCode AND s.studentId = #{studentId})
+            ORDER BY examCode DESC, scoreId DESC
+            """)
+    List<Map<String, Object>> listStudentExamRecords(@Param("studentId") Integer studentId);
+
     /** 按考试编号取全部成绩（用于单场考试统计） */
     @Select("SELECT * FROM score WHERE examCode = #{examCode}")
     List<Score> listByExamCode(@Param("examCode") Integer examCode);

@@ -66,9 +66,10 @@ public class PaperController {
     public ApiResponse<Void> addQuestion(
             @PathVariable Integer paperId,
             @RequestBody Map<String, Object> body) {
-        Integer questionType = (Integer) body.get("questionType");
-        Integer questionId = (Integer) body.get("questionId");
-        paperService.addQuestionToPaper(paperId, questionType, questionId);
+        Integer questionType = ((Number) body.get("questionType")).intValue();
+        Integer questionId = ((Number) body.get("questionId")).intValue();
+        Integer examCode = ((Number) body.get("examCode")).intValue();
+        paperService.addQuestionToPaper(paperId, questionType, questionId, examCode);
         return ApiResponse.success(null);
     }
 
@@ -76,11 +77,11 @@ public class PaperController {
     @PostMapping("/compose/{paperId}/auto")
     public ApiResponse<Map<String, Object>> autoCompose(
             @PathVariable Integer paperId,
-            @RequestParam String subject) {
-        int added = paperService.autoCompose(paperId, subject.trim());
+            @RequestParam Integer examCode) {
+        int added = paperService.autoCompose(paperId, examCode);
         Map<String, Object> result = new java.util.LinkedHashMap<>();
         result.put("added", added);
-        result.put("message", added > 0 ? "成功添加 " + added + " 道题目" : "未发现新题目，该科目下题目可能已全部加入或题库为空");
+        result.put("message", added > 0 ? "组卷成功：已覆盖全部可用题型并凑满总分，新增 " + added + " 道题目" : "试卷已覆盖全部可用题型且达到科目总分");
         return ApiResponse.success(result);
     }
 
@@ -89,8 +90,8 @@ public class PaperController {
     public ApiResponse<Void> removeQuestion(
             @PathVariable Integer paperId,
             @RequestBody Map<String, Object> body) {
-        Integer questionType = (Integer) body.get("questionType");
-        Integer questionId = (Integer) body.get("questionId");
+        Integer questionType = ((Number) body.get("questionType")).intValue();
+        Integer questionId = ((Number) body.get("questionId")).intValue();
         paperService.removeQuestionFromPaper(paperId, questionType, questionId);
         return ApiResponse.success(null);
     }

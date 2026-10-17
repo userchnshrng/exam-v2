@@ -37,7 +37,7 @@ export function updateExamAnswer(answerId: number, data: Partial<ExamAnswerRecor
     return http.put<ApiResponse<null>>(`/api/exam-answers/${answerId}`, data)
 }
 
-/** 教师重置某学生在某场考试的全部记录（答题 + 成绩） */
+/** 仅管理员可重置某学生在某场考试的全部记录（答题 + 成绩） */
 export function resetExamRecord(examCode: number, studentId: number) {
     return http.delete<ApiResponse<null>>(`/api/exam-answers/${examCode}/${studentId}`)
 }

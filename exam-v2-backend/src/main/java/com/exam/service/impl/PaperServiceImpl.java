@@ -154,7 +154,16 @@ public class PaperServiceImpl implements PaperService {
     }
 
     @Override
-    public void addQuestionToPaper(Integer paperId, Integer questionType, Integer questionId) {
+    public void addQuestionToPaper(Integer paperId, Integer questionType, Integer questionId, Integer examCode) {
+        ExamManage exam = requireComposeExam(paperId, examCode);
+        Map<String, Object> question = findQuestion(questionType, questionId);
+        if (question == null || !exam.getSource().trim().equals(str(question, "subject").trim())) throw new RuntimeException("题目不属于该考试科目");
+        String key = questionType + "_" + questionId;
+        for (Map<String, Object> mapping : paperManageMapper.listByPaperId(paperId)) {
+            if (key.equals(mapping.get("questionType") + "_" + mapping.get("questionId"))) return;
+        }
+        int selectedScore = selectedScoreForSubject(paperId, exam.getSource());
+        if (selectedScore + intVal(question, "score") > exam.getTotalScore()) throw new RuntimeException("组卷失败：超出科目总分");
         paperManageMapper.insertMapping(paperId, questionType, questionId);
     }
 
@@ -164,33 +173,81 @@ public class PaperServiceImpl implements PaperService {
     }
 
     @Override
-    public int autoCompose(Integer paperId, String subject) {
-        subject = subject != null ? subject.trim() : "";
+    @Transactional
+    public int autoCompose(Integer paperId, Integer examCode) {
+        ExamManage exam = requireComposeExam(paperId, examCode);
+        String subject = exam.getSource().trim();
+        int totalScore = exam.getTotalScore();
         Set<String> existing = new HashSet<>();
         for (Map<String, Object> m : paperManageMapper.listByPaperId(paperId)) {
             existing.add(m.get("questionType") + "_" + m.get("questionId"));
         }
-        int added = 0;
-        for (Map<String, Object> q : paperManageMapper.listMultiBySubject(subject)) {
-            if (existing.add("1_" + q.get("questionId"))) {
-                paperManageMapper.insertMapping(paperId, 1, (Integer) q.get("questionId"));
-                added++;
+        int selectedScore = selectedScoreForSubject(paperId, subject);
+        if (selectedScore > totalScore) throw new RuntimeException("组卷失败：超出科目总分");
+        int remaining = totalScore - selectedScore;
+        List<Map<String, Object>> questions = getComposeData(paperId, subject);
+        Allocation[] allocations = new Allocation[remaining + 1];
+        allocations[0] = new Allocation(0, List.of());
+        boolean hasQuestions = false;
+        for (int type = 1; type <= 3; type++) {
+            int currentType = type;
+            List<Map<String, Object>> typedQuestions = questions.stream()
+                    .filter(q -> intVal(q, "questionType") == currentType).toList();
+            if (typedQuestions.isEmpty()) continue;
+            hasQuestions = true;
+            int existingScore = 0;
+            boolean covered = false;
+            QuestionSelection[] selections = new QuestionSelection[remaining + 1];
+            boolean[] reachable = new boolean[remaining + 1];
+            reachable[0] = true;
+            for (Map<String, Object> q : typedQuestions) {
+                int score = intVal(q, "score");
+                if (score <= 0) throw new RuntimeException("组卷失败：题目分值必须大于0");
+                if (existing.contains(type + "_" + q.get("questionId"))) {
+                    covered = true;
+                    existingScore += score;
+                    continue;
+                }
+                // 倒序更新并保存不可变链，保证每道题只选择一次。
+                for (int sum = remaining; sum >= score; sum--) {
+                    if (!reachable[sum] && reachable[sum - score]) {
+                        reachable[sum] = true;
+                        selections[sum] = new QuestionSelection(q, selections[sum - score]);
+                    }
+                }
             }
-        }
-        for (Map<String, Object> q : paperManageMapper.listFillBySubject(subject)) {
-            if (existing.add("2_" + q.get("questionId"))) {
-                paperManageMapper.insertMapping(paperId, 2, (Integer) q.get("questionId"));
-                added++;
+            Allocation[] next = new Allocation[remaining + 1];
+            for (int used = 0; used <= remaining; used++) {
+                if (allocations[used] == null) continue;
+                for (int addition = covered ? 0 : 1; addition <= remaining - used; addition++) {
+                    if (!reachable[addition]) continue;
+                    long typeScore = (long) existingScore + addition;
+                    // 总分固定时，最小化各题型分值平方和即尽量均衡分配。
+                    long cost = allocations[used].cost() + typeScore * typeScore;
+                    int sum = used + addition;
+                    if (next[sum] != null && next[sum].cost() <= cost) continue;
+                    List<Map<String, Object>> additions = new ArrayList<>(allocations[used].additions());
+                    for (QuestionSelection selection = selections[addition]; selection != null; selection = selection.previous()) {
+                        additions.add(selection.question());
+                    }
+                    next[sum] = new Allocation(cost, List.copyOf(additions));
+                }
             }
+            allocations = next;
         }
-        for (Map<String, Object> q : paperManageMapper.listJudgeBySubject(subject)) {
-            if (existing.add("3_" + q.get("questionId"))) {
-                paperManageMapper.insertMapping(paperId, 3, (Integer) q.get("questionId"));
-                added++;
-            }
+        if (!hasQuestions || allocations[remaining] == null) {
+            throw new RuntimeException("组卷失败：无法在保留已选题目的情况下覆盖该科目全部可用题型并凑满 " + totalScore + " 分，请调整已选题目或补充题库");
         }
-        return added;
+        List<Map<String, Object>> additions = allocations[remaining].additions();
+        for (Map<String, Object> q : additions) {
+            paperManageMapper.insertMapping(paperId, intVal(q, "questionType"), (Integer) q.get("questionId"));
+        }
+        return additions.size();
     }
+
+    private record QuestionSelection(Map<String, Object> question, QuestionSelection previous) {}
+
+    private record Allocation(long cost, List<Map<String, Object>> additions) {}
 
     @Override
     public List<SubmitResultVO.AnswerResult> getAnswerDetails(Integer examCode, Integer studentId) {
@@ -275,5 +332,27 @@ public class PaperServiceImpl implements PaperService {
 
     private String normalize(String s) {
         return s == null ? "" : s.trim();
+    }
+
+    private ExamManage requireComposeExam(Integer paperId, Integer examCode) {
+        ExamManage exam = examManageMapper.findById(examCode);
+        if (exam == null || !Objects.equals(exam.getPaperId(), paperId) || exam.getSource() == null || exam.getTotalScore() == null) throw new RuntimeException("考试或组卷参数无效");
+        return exam;
+    }
+
+    private Map<String, Object> findQuestion(Integer type, Integer id) {
+        if (type == 1) return paperManageMapper.findMultiById(id);
+        if (type == 2) return paperManageMapper.findFillById(id);
+        if (type == 3) return paperManageMapper.findJudgeById(id);
+        return null;
+    }
+
+    private int selectedScoreForSubject(Integer paperId, String subject) {
+        int total = 0;
+        for (Map<String, Object> mapping : paperManageMapper.listByPaperId(paperId)) {
+            Map<String, Object> question = findQuestion(intVal(mapping, "questionType"), (Integer) mapping.get("questionId"));
+            if (question != null && subject.trim().equals(str(question, "subject").trim())) total += intVal(question, "score");
+        }
+        return total;
     }
 }

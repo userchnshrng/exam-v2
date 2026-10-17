@@ -42,7 +42,6 @@ public class ExamManageServiceImpl implements ExamManageService {
     public ExamManage create(ExamManage exam) {
         exam.setSource(trimToNull(exam.getSource()));
         examManageMapper.insert(exam);
-        autoComposeIfNeeded(exam);
         return exam;
     }
 
@@ -51,7 +50,6 @@ public class ExamManageServiceImpl implements ExamManageService {
         getById(exam.getExamCode());
         exam.setSource(trimToNull(exam.getSource()));
         examManageMapper.update(exam);
-        autoComposeIfNeeded(exam);
         return exam;
     }
 
@@ -59,13 +57,6 @@ public class ExamManageServiceImpl implements ExamManageService {
     public void delete(Integer examCode) {
         getById(examCode);
         examManageMapper.delete(examCode);
-    }
-
-    /** 自动组卷：考试设置 paperId + 课程名时，自动纳入该科目下全部题目 */
-    private void autoComposeIfNeeded(ExamManage exam) {
-        if (exam.getPaperId() != null && exam.getSource() != null && !exam.getSource().isEmpty()) {
-            paperService.autoCompose(exam.getPaperId(), exam.getSource());
-        }
     }
 
     private String trimToNull(String s) {

@@ -1,6 +1,8 @@
 # node_modules
 node_modules/
 
+UML图/
+
 # build output
 dist/
 build/
@@ -22,3 +24,5 @@ build/
 exam-v2-backend/src/main/resources/application.yml
 
 API.txt
+
+AGENTS.md

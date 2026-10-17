@@ -6,6 +6,7 @@ export interface ImportResult {
     fail: number
     total: number
     errors: string[]
+    error?: string
 }
 
 /** 导入学生 */

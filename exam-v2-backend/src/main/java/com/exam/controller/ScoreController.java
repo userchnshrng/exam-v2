@@ -6,6 +6,8 @@ import com.exam.config.UserContext;
 import com.exam.entity.Score;
 import com.exam.service.ScoreService;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/scores")
@@ -15,6 +17,19 @@ public class ScoreController {
 
     public ScoreController(ScoreService scoreService) {
         this.scoreService = scoreService;
+    }
+
+    @GetMapping("/students/{studentId}/records")
+    public ApiResponse<List<Map<String, Object>>> listStudentExamRecords(@PathVariable Integer studentId) {
+        if (!UserContext.isAdmin()) throw new RuntimeException("仅管理员可查看学生历史考试列表");
+        return ApiResponse.success(scoreService.listStudentExamRecords(studentId));
+    }
+
+    @DeleteMapping("/students/{studentId}/unscored/{examCode}")
+    public ApiResponse<Void> deleteUnscoredAnswers(@PathVariable Integer studentId, @PathVariable Integer examCode) {
+        if (!UserContext.isAdmin()) throw new RuntimeException("仅管理员可清理无成绩的历史答卷");
+        scoreService.deleteUnscoredAnswers(examCode, studentId);
+        return ApiResponse.success(null);
     }
 
     @GetMapping
@@ -61,14 +76,22 @@ public class ScoreController {
         return ApiResponse.success(null);
     }
 
-    /**
-     * 教师删除某学生在某场考试的成绩记录
-     */
+    /** 仅管理员可精确删除列表中的一次考试记录。 */
+    @DeleteMapping("/{id}")
+    public ApiResponse<Void> deleteById(@PathVariable("id") Integer id) {
+        if (!UserContext.isAdmin()) {
+            throw new RuntimeException("仅管理员可删除考试记录");
+        }
+        scoreService.deleteById(id);
+        return ApiResponse.success(null);
+    }
+
+    /** 管理员按考试和学生清除整组成绩，供显式重置操作使用。 */
     @DeleteMapping("/by-exam/{examCode}/{studentId}")
     public ApiResponse<Void> deleteByExam(@PathVariable Integer examCode,
                                           @PathVariable Integer studentId) {
-        if (!UserContext.isTeacher()) {
-            throw new RuntimeException("仅教师可删除成绩");
+        if (!UserContext.isAdmin()) {
+            throw new RuntimeException("仅管理员可删除成绩");
         }
         scoreService.deleteByExamAndStudent(examCode, studentId);
         return ApiResponse.success(null);

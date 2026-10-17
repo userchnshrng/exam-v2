@@ -190,8 +190,17 @@
         <div class="compose-toolbar">
           <span class="compose-hint">
             已选 <strong>{{ checkedCount(Number(composeTab)) }}</strong> / {{ composeByType(Number(composeTab)).length }} 题
+            · 已选 <strong>{{ selectedScore }}</strong> / {{ composeExam?.totalScore || 0 }} 分
             · 科目匹配「<em>{{ composeExam?.source }}</em>」
           </span>
+          <el-button size="small" @click="toggleAllCurrentType">{{ checkedCount(Number(composeTab)) === composeByType(Number(composeTab)).length ? '取消全选' : '全选本题型' }}</el-button>
+          <el-popconfirm
+              v-if="checkedCount(Number(composeTab)) > 0"
+              title="确定取消当前题型已选题目？"
+              @confirm="cancelSelectedCurrentType"
+          >
+            <template #reference><el-button size="small" type="danger" plain>取消已选</el-button></template>
+          </el-popconfirm>
         </div>
 
         <div v-if="composeByType(Number(composeTab)).length === 0" class="compose-empty-state">
@@ -342,6 +351,7 @@ function checkedCount(type: number) { return composeByType(type).filter(q => isC
 function typeLabel(type: number) { return type === 1 ? '选择' : type === 2 ? '填空' : '判断' }
 
 function tabLabel(tab: string) { return tab === '1' ? '选择题' : tab === '2' ? '填空题' : '判断题' }
+const selectedScore = computed(() => composeData.value.filter(isComposeChecked).reduce((sum, q) => sum + (q.score || 0), 0))
 
 function openCompose(row: ExamManage) {
   composeExam.value = row
@@ -389,9 +399,11 @@ async function handleAutoCompose() {
   if (!composeExam.value?.paperId || !composeExam.value?.source) return
   autoComposing.value = true
   try {
-    const res = await autoCompose(composeExam.value.paperId, composeExam.value.source)
+    const res = await autoCompose(composeExam.value.paperId, composeExam.value.examCode!)
     if (res.data.code === 0) {
       ElMessage.success(res.data.data?.message || '组卷完成')
+    } else {
+      ElMessage.error(res.data.message || '自动组卷失败')
     }
     await loadComposeData()
   } catch {
@@ -405,7 +417,7 @@ async function onToggle(q: ComposeQuestion, checked: boolean) {
   if (!composeExam.value?.paperId) return
   try {
     if (checked) {
-      await addQuestionToPaper(composeExam.value.paperId, q.questionType, q.questionId)
+      await addQuestionToPaper(composeExam.value.paperId, q.questionType, q.questionId, composeExam.value.examCode!)
       composeChecked.value.push(compKey(q))
     } else {
       await removeQuestionFromPaper(composeExam.value.paperId, q.questionType, q.questionId)
@@ -415,6 +427,19 @@ async function onToggle(q: ComposeQuestion, checked: boolean) {
     ElMessage.error('操作失败')
     loadComposeData()
   }
+}
+
+async function toggleAllCurrentType() {
+  const questions = composeByType(Number(composeTab.value))
+  const shouldSelect = questions.some(q => !isComposeChecked(q))
+  for (const q of questions) {
+    if (isComposeChecked(q) !== shouldSelect) await onToggle(q, shouldSelect)
+  }
+}
+
+async function cancelSelectedCurrentType() {
+  const selectedQuestions = composeByType(Number(composeTab.value)).filter(isComposeChecked)
+  for (const question of selectedQuestions) await onToggle(question, false)
 }
 
 onMounted(() => fetchList())

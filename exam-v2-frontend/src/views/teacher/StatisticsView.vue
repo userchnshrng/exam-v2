@@ -53,7 +53,7 @@
           </template>
         </el-table-column>
         <el-table-column prop="date" label="日期" width="120" align="center" />
-        <el-table-column label="操作" width="240" align="center" fixed="right">
+        <el-table-column label="操作" width="180" align="center" fixed="right">
           <template #default="{ row }">
             <el-button type="primary" size="small" link @click="viewAnswers(row)">
               查看详情
@@ -61,11 +61,6 @@
             <el-button type="warning" size="small" link @click="openEdit(row)">
               修改
             </el-button>
-            <el-popconfirm title="确定删除该学生的本场考试记录？此操作不可恢复" @confirm="deleteRecord(row)">
-              <template #reference>
-                <el-button type="danger" size="small" link>删除</el-button>
-              </template>
-            </el-popconfirm>
           </template>
         </el-table-column>
       </el-table>
@@ -210,7 +205,7 @@ import {
   type ScoreDistribution, type ExamComparisonItem, type StudentScoreItem, type ExamOption
 } from '@/api/statistics'
 import {
-  getStudentExamAnswers, updateExamAnswer, resetExamRecord,
+  getStudentExamAnswers, updateExamAnswer,
   type ExamAnswerRecord
 } from '@/api/examAnswer'
 
@@ -445,22 +440,6 @@ async function saveAnswer(row: ExamAnswerRecord) {
     }
   } catch {
     ElMessage.error('保存失败')
-  }
-}
-
-// ===== 删除考试记录 =====
-async function deleteRecord(row: StudentScoreItem) {
-  try {
-    const res = await resetExamRecord(row.examCode, row.studentId)
-    if (res.data.code === 0) {
-      ElMessage.success('已删除该学生的考试记录')
-      // 刷新列表
-      await loadStudentScores()
-    } else {
-      ElMessage.error(res.data.message || '删除失败')
-    }
-  } catch {
-    ElMessage.error('删除失败')
   }
 }
 

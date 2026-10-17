@@ -22,11 +22,11 @@ public interface PaperService {
     List<Map<String, Object>> getComposeData(Integer paperId, String subject);
 
     /** 添加题目到试卷 */
-    void addQuestionToPaper(Integer paperId, Integer questionType, Integer questionId);
+    void addQuestionToPaper(Integer paperId, Integer questionType, Integer questionId, Integer examCode);
 
     /** 从试卷移除题目 */
     void removeQuestionFromPaper(Integer paperId, Integer questionType, Integer questionId);
 
-    /** 自动组卷：将某科目的全部题目加入试卷（不覆盖已存在映射） */
-    int autoCompose(Integer paperId, String subject);
+    /** 自动组卷：保留已选，覆盖科目全部可用题型，均衡分配并凑满总分。 */
+    int autoCompose(Integer paperId, Integer examCode);
 }

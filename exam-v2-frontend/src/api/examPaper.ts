@@ -87,8 +87,8 @@ export function getComposeData(paperId: number, subject: string) {
 }
 
 /** 添加题目到试卷 */
-export function addQuestionToPaper(paperId: number, questionType: number, questionId: number) {
-    return http.post<ApiResponse<null>>(`/api/paper/compose/${paperId}/add`, { questionType, questionId })
+export function addQuestionToPaper(paperId: number, questionType: number, questionId: number, examCode: number) {
+    return http.post<ApiResponse<null>>(`/api/paper/compose/${paperId}/add`, { questionType, questionId, examCode })
 }
 
 /** 从试卷移除题目 */
@@ -97,6 +97,6 @@ export function removeQuestionFromPaper(paperId: number, questionType: number, q
 }
 
 /** 一键自动组卷 */
-export function autoCompose(paperId: number, subject: string) {
-    return http.post<ApiResponse<{ added: number; message: string }>>(`/api/paper/compose/${paperId}/auto`, null, { params: { subject } })
+export function autoCompose(paperId: number, examCode: number) {
+    return http.post<ApiResponse<{ added: number; message: string }>>(`/api/paper/compose/${paperId}/auto`, null, { params: { examCode } })
 }

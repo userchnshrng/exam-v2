@@ -24,10 +24,21 @@
 
         <div class="table-toolbar">
           <el-button type="primary" @click="openCreate">{{ createBtnText }}</el-button>
+          <el-popconfirm
+              v-if="selectedIds.length"
+              :title="`确定删除已选中的 ${selectedIds.length} 道题目？`"
+              @confirm="handleBatchDelete"
+          >
+            <template #reference>
+              <el-button type="danger">删除所选（{{ selectedIds.length }}）</el-button>
+            </template>
+          </el-popconfirm>
         </div>
 
         <!-- ===== 选择题表格 ===== -->
-        <el-table v-show="questionType === 'multi'" :data="tableData" v-loading="loading" stripe border style="width:100%">
+        <el-table v-show="questionType === 'multi'" :data="tableData" v-loading="loading" stripe border style="width:100%"
+                  @selection-change="handleSelectionChange">
+          <el-table-column type="selection" width="55" align="center" />
           <el-table-column prop="questionId" label="ID" width="80" align="center" />
           <el-table-column prop="subject" label="科目" width="120" />
           <el-table-column prop="question" label="题目" min-width="180" show-overflow-tooltip />
@@ -46,7 +57,9 @@
         </el-table>
 
         <!-- ===== 填空题表格 ===== -->
-        <el-table v-show="questionType === 'fill'" :data="tableData" v-loading="loading" stripe border style="width:100%">
+        <el-table v-show="questionType === 'fill'" :data="tableData" v-loading="loading" stripe border style="width:100%"
+                  @selection-change="handleSelectionChange">
+          <el-table-column type="selection" width="55" align="center" />
           <el-table-column prop="questionId" label="ID" width="80" align="center" />
           <el-table-column prop="subject" label="科目" width="120" />
           <el-table-column prop="question" label="题目" min-width="200" show-overflow-tooltip />
@@ -65,7 +78,9 @@
         </el-table>
 
         <!-- ===== 判断题表格 ===== -->
-        <el-table v-show="questionType === 'judge'" :data="tableData" v-loading="loading" stripe border style="width:100%">
+        <el-table v-show="questionType === 'judge'" :data="tableData" v-loading="loading" stripe border style="width:100%"
+                  @selection-change="handleSelectionChange">
+          <el-table-column type="selection" width="55" align="center" />
           <el-table-column prop="questionId" label="ID" width="80" align="center" />
           <el-table-column prop="subject" label="科目" width="120" />
           <el-table-column prop="question" label="题目" min-width="240" show-overflow-tooltip />
@@ -117,6 +132,7 @@
         </el-tabs>
 
         <el-upload
+            ref="uploadRef"
             :auto-upload="false"
             :limit="1"
             accept=".xlsx,.xls"
@@ -248,7 +264,7 @@ import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
 import { UploadFilled } from '@element-plus/icons-vue'
-import type { UploadFile } from 'element-plus'
+import type { UploadFile, UploadInstance } from 'element-plus'
 import {
   listMulti, createMulti, updateMulti, deleteMulti,
   listFill, createFill, updateFill, deleteFill,
@@ -271,6 +287,7 @@ const createBtnText = computed(() => {
 const loading = ref(false)
 const tableData = ref<any[]>([])
 const total = ref(0)
+const selectedIds = ref<number[]>([])
 
 async function fetchList() {
   loading.value = true
@@ -284,6 +301,7 @@ async function fetchList() {
     if (res.data.code === 0 && res.data.data) {
       tableData.value = res.data.data.records
       total.value = res.data.data.total
+      selectedIds.value = []
     }
   } finally {
     loading.value = false
@@ -404,10 +422,39 @@ async function handleDelete(id: number) {
   }
 }
 
+function handleSelectionChange(rows: Array<{ questionId: number }>) {
+  selectedIds.value = rows.map(row => row.questionId)
+}
+
+async function handleBatchDelete() {
+  const ids = [...selectedIds.value]
+  if (!ids.length) return
+
+  loading.value = true
+  try {
+    const requests = questionType.value === 'multi' ? ids.map(deleteMulti)
+      : questionType.value === 'fill' ? ids.map(deleteFill) : ids.map(deleteJudge)
+    const results = await Promise.allSettled(requests)
+    const deletedCount = results.filter(result => result.status === 'fulfilled').length
+
+    if (deletedCount === ids.length) ElMessage.success(`已删除 ${deletedCount} 道题目`)
+    else if (deletedCount > 0) ElMessage.warning(`已删除 ${deletedCount} 道题目，${ids.length - deletedCount} 道删除失败`)
+    else ElMessage.error('批量删除失败，请刷新后重试')
+
+    if (deletedCount > 0 && tableData.value.length === deletedCount && searchForm.page > 1) searchForm.page--
+    await fetchList()
+  } catch {
+    ElMessage.error('批量删除失败，请刷新后重试')
+  } finally {
+    loading.value = false
+  }
+}
+
 // ---------- Import ----------
 const importType = ref<'multi' | 'fill' | 'judge'>('multi')
 const importFile = ref<File | null>(null)
 const fileList = ref<UploadFile[]>([])
+const uploadRef = ref<UploadInstance>()
 const uploading = ref(false)
 const importResult = ref<ImportResult | null>(null)
 
@@ -425,7 +472,21 @@ async function handleImport() {
     if (importType.value === 'multi') res = await importQuestions(importFile.value)
     else if (importType.value === 'fill') res = await importFillQuestions(importFile.value)
     else res = await importJudgeQuestions(importFile.value)
-    if (res.data.code === 0) importResult.value = res.data.data
+    if (res.data.code === 0) {
+      importResult.value = res.data.data
+      const typeName = importType.value === 'multi' ? '选择题' : importType.value === 'fill' ? '填空题' : '判断题'
+      if (res.data.data.success > 0) {
+        ElMessage.success(`成功导入 ${typeName} ${res.data.data.success} 道`)
+        importFile.value = null
+        fileList.value = []
+        uploadRef.value?.clearFiles()
+        questionType.value = importType.value
+        searchForm.page = 1
+        await fetchList()
+      } else {
+        ElMessage.error(res.data.data.error || res.data.data.errors?.[0] || `未导入任何${typeName}，请检查文件内容和列顺序`)
+      }
+    }
     else ElMessage.error(res.data.message || '导入失败')
   } catch { ElMessage.error('导入失败') }
   finally { uploading.value = false }
@@ -433,9 +494,19 @@ async function handleImport() {
 
 // 切换 tab 时重置表单校验
 watch(questionType, (val) => {
-  if (val === 'import') return
+  if (val === 'import') {
+    selectedIds.value = []
+    return
+  }
   formRef.value?.clearValidate()
   Object.assign(form, emptyMulti())
+})
+
+watch(importType, () => {
+  importFile.value = null
+  fileList.value = []
+  importResult.value = null
+  uploadRef.value?.clearFiles()
 })
 onMounted(() => fetchList())
 </script>

@@ -91,14 +91,14 @@ public class ExamAnswerController {
     }
 
     /**
-     * 教师删除/重置某学生在某场考试的全部记录（答题 + 成绩）
+     * 管理员删除/重置某学生在某场考试的全部记录（答题 + 成绩）
      */
     @DeleteMapping("/{examCode}/{studentId}")
     public ApiResponse<Void> resetExamRecord(
             @PathVariable Integer examCode,
             @PathVariable Integer studentId) {
-        if (!UserContext.isTeacher()) {
-            throw new RuntimeException("仅教师可重置考试记录");
+        if (!UserContext.isAdmin()) {
+            throw new RuntimeException("仅管理员可重置考试记录");
         }
         examAnswerService.deleteByExamAndStudent(examCode, studentId);
         scoreService.deleteByExamAndStudent(examCode, studentId);
