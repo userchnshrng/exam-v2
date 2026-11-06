@@ -78,6 +78,7 @@
           </div>
         </div>
       </template>
+      <el-alert v-if="detailError" :title="detailError" type="warning" :closable="false" show-icon />
       <el-table :data="detailAnswers" v-loading="detailLoading" border
                 max-height="480" empty-text="暂无答题记录"
                 :row-class-name="detailRowClass">
@@ -95,8 +96,8 @@
                 <span v-for="opt in [row.optionA, row.optionB, row.optionC, row.optionD]"
                       :key="opt" class="option-item"
                       :class="{
-                        'option-chosen': opt && row.studentAnswer && opt.startsWith(row.studentAnswer + '.'),
-                        'option-correct': opt && row.correctAnswer && opt.startsWith(row.correctAnswer + '.')
+                        'option-chosen': opt && hasStudentAnswer(row) && opt.startsWith(row.studentAnswer + '.'),
+                        'option-correct': opt && hasStudentAnswer(row) && row.correctAnswer && opt.startsWith(row.correctAnswer + '.')
                       }">{{ opt }}</span>
               </div>
             </div>
@@ -104,7 +105,7 @@
         </el-table-column>
         <el-table-column label="学生答案" width="100" align="center">
           <template #default="{ row }">
-            <span :class="row.isCorrect ? 'answer-ok' : 'answer-bad'">{{ row.studentAnswer || '未作答' }}</span>
+            <span :class="hasStudentAnswer(row) ? (row.isCorrect ? 'answer-ok' : 'answer-bad') : ''">{{ hasStudentAnswer(row) ? row.studentAnswer : '未作答' }}</span>
           </template>
         </el-table-column>
         <el-table-column label="正确答案" width="100" align="center">
@@ -114,12 +115,12 @@
         </el-table-column>
         <el-table-column label="判题" width="80" align="center">
           <template #default="{ row }">
-            <el-tag :type="row.isCorrect ? 'success' : 'danger'" size="small" effect="dark">
-              {{ row.isCorrect ? '✓ 正确' : '✗ 错误' }}
+            <el-tag :type="!hasStudentAnswer(row) ? 'info' : row.isCorrect ? 'success' : 'danger'" size="small" effect="dark">
+              {{ !hasStudentAnswer(row) ? '未作答' : row.isCorrect ? '✓ 正确' : '✗ 错误' }}
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column prop="score" label="得分" width="70" align="center" />
+        <el-table-column label="得分" width="70" align="center"><template #default="{ row }">{{ hasStudentAnswer(row) ? row.score : 0 }}</template></el-table-column>
       </el-table>
     </el-dialog>
 
@@ -136,6 +137,7 @@
         </div>
       </template>
 
+      <el-alert v-if="editError" :title="editError" type="warning" :closable="false" show-icon />
       <el-table :data="editAnswers" v-loading="editLoading" stripe border
                 max-height="480" empty-text="暂无答题记录"
                 :row-class-name="editRowClass">
@@ -150,7 +152,8 @@
         <el-table-column label="学生答案" min-width="130" align="center">
           <template #default="{ row }">
             <el-input v-model="row.studentAnswer" size="small"
-                      :class="{ 'is-wrong-input': !row.isCorrect && row.studentAnswer }" />
+                      @input="resetBlankScore(row)"
+                      :class="{ 'is-wrong-input': hasStudentAnswer(row) && !row.isCorrect }" />
           </template>
         </el-table-column>
         <el-table-column prop="correctAnswer" label="正确答案" min-width="130" align="center">
@@ -161,10 +164,11 @@
         <el-table-column label="判题" width="100" align="center">
           <template #default="{ row }">
             <div class="judge-toggle">
-              <span :class="['judge-label', row.isCorrect ? 'judge-right' : 'judge-wrong']">
-                {{ row.isCorrect ? '✓ 正确' : '✗ 错误' }}
+              <span :class="['judge-label', hasStudentAnswer(row) ? (row.isCorrect ? 'judge-right' : 'judge-wrong') : '']">
+                {{ !hasStudentAnswer(row) ? '未作答' : row.isCorrect ? '✓ 正确' : '✗ 错误' }}
               </span>
               <el-switch v-model="row.isCorrect" size="small"
+                         :disabled="!hasStudentAnswer(row)"
                          :active-value="true" :inactive-value="false" />
             </div>
           </template>
@@ -172,6 +176,7 @@
         <el-table-column label="得分" width="90" align="center">
           <template #default="{ row }">
             <el-input-number v-model="row.score" :min="0" :max="100" size="small"
+                             :disabled="!hasStudentAnswer(row)"
                              controls-position="right" style="width:85px" />
           </template>
         </el-table-column>
@@ -205,7 +210,7 @@ import {
   type ScoreDistribution, type ExamComparisonItem, type StudentScoreItem, type ExamOption
 } from '@/api/statistics'
 import {
-  getStudentExamAnswers, updateExamAnswer,
+  getStudentExamAnswers, updateExamAnswer, hasStudentAnswer,
   type ExamAnswerRecord
 } from '@/api/examAnswer'
 
@@ -228,6 +233,8 @@ const detailLoading = ref(false)
 const detailStudentName = ref('')
 const detailSubject = ref('')
 const detailAnswers = ref<ExamAnswerRecord[]>([])
+const detailError = ref('')
+let detailRequest = 0
 
 // ===== 修改对话框 =====
 const editVisible = ref(false)
@@ -235,6 +242,8 @@ const editLoading = ref(false)
 const editStudentName = ref('')
 const editSubject = ref('')
 const editAnswers = ref<ExamAnswerRecord[]>([])
+const editError = ref('')
+let editRequest = 0
 
 function questionTypeLabel(type: number): string {
   switch (type) {
@@ -255,10 +264,12 @@ function questionTagType(type: number): string {
 }
 
 function detailRowClass({ row }: { row: ExamAnswerRecord }): string {
+  if (!hasStudentAnswer(row)) return ''
   return row.isCorrect ? 'detail-row-correct' : 'detail-row-wrong'
 }
 
 function editRowClass({ row }: { row: ExamAnswerRecord }): string {
+  if (!hasStudentAnswer(row)) return ''
   return row.isCorrect ? 'edit-row-correct' : 'edit-row-wrong'
 }
 
@@ -374,53 +385,72 @@ async function loadStudentScores() {
 
 // ===== 查看答题详情 =====
 async function viewAnswers(row: StudentScoreItem) {
+  const request = ++detailRequest
+  detailAnswers.value = []
+  detailError.value = ''
   detailVisible.value = true
   detailStudentName.value = row.studentName
   detailSubject.value = row.subject
   detailLoading.value = true
   try {
-    const res = await getStudentExamAnswers(row.examCode, row.studentId)
+    const res = await getStudentExamAnswers(row.examCode, row.studentId, row.scoreId)
+    if (request !== detailRequest) return
     if (res.data.code === 0) {
       detailAnswers.value = res.data.data ?? []
     } else {
+      detailError.value = res.data.message || '获取答题详情失败'
       ElMessage.error(res.data.message || '获取答题详情失败')
     }
-  } catch {
-    ElMessage.error('获取答题详情失败')
+  } catch (error: any) {
+    if (request !== detailRequest) return
+    detailError.value = error?.response?.data?.message || '获取答题详情失败'
   } finally {
-    detailLoading.value = false
+    if (request === detailRequest) detailLoading.value = false
   }
 }
 
 // ===== 打开修改对话框 =====
 async function openEdit(row: StudentScoreItem) {
+  const request = ++editRequest
+  editAnswers.value = []
+  editError.value = ''
   editVisible.value = true
   editStudentName.value = row.studentName
   editSubject.value = row.subject
   editLoading.value = true
   try {
-    const res = await getStudentExamAnswers(row.examCode, row.studentId)
+    const res = await getStudentExamAnswers(row.examCode, row.studentId, row.scoreId)
+    if (request !== editRequest) return
     if (res.data.code === 0) {
       // 深拷贝避免直接修改原数据
       editAnswers.value = (res.data.data ?? []).map(a => ({ ...a }))
     } else {
+      editError.value = res.data.message || '获取答题详情失败'
       ElMessage.error(res.data.message || '获取答题详情失败')
     }
-  } catch {
-    ElMessage.error('获取答题详情失败')
+  } catch (error: any) {
+    if (request !== editRequest) return
+    editError.value = error?.response?.data?.message || '获取答题详情失败'
   } finally {
-    editLoading.value = false
+    if (request === editRequest) editLoading.value = false
   }
 }
 
 function clearEdit() {
+  editRequest++
+  editError.value = ''
   editAnswers.value = []
   editStudentName.value = ''
   editSubject.value = ''
 }
 
 // ===== 保存单条答题修改 =====
+function resetBlankScore(row: ExamAnswerRecord) {
+  if (!hasStudentAnswer(row)) { row.isCorrect = false; row.score = 0 }
+}
+
 async function saveAnswer(row: ExamAnswerRecord) {
+  resetBlankScore(row)
   try {
     const res = await updateExamAnswer(row.answerId, {
       studentAnswer: row.studentAnswer,
@@ -429,6 +459,7 @@ async function saveAnswer(row: ExamAnswerRecord) {
     })
     if (res.data.code === 0) {
       ElMessage.success('保存成功')
+      await Promise.all([loadStudentScores(), loadDistribution(selectedPieExam.value ?? undefined), loadExamComparison()])
     } else {
       ElMessage.error(res.data.message || '保存失败')
     }

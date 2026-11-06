@@ -8,13 +8,22 @@ import java.util.List;
 @Mapper
 public interface ExamAnswerMapper {
 
-    @Insert("INSERT INTO exam_answer (examCode, studentId, questionType, questionId, studentAnswer, correctAnswer, isCorrect, score) " +
-            "VALUES (#{examCode}, #{studentId}, #{questionType}, #{questionId}, #{studentAnswer}, #{correctAnswer}, #{isCorrect}, #{score})")
+    @Insert("INSERT INTO exam_answer (scoreId, examCode, studentId, questionType, questionId, studentAnswer, correctAnswer, isCorrect, score) " +
+            "VALUES (#{scoreId}, #{examCode}, #{studentId}, #{questionType}, #{questionId}, #{studentAnswer}, #{correctAnswer}, #{isCorrect}, #{score})")
     @Options(useGeneratedKeys = true, keyProperty = "answerId")
     int insert(ExamAnswer answer);
 
     @Select("SELECT * FROM exam_answer WHERE answerId = #{answerId}")
     ExamAnswer findById(@Param("answerId") Integer answerId);
+
+    @Select("SELECT * FROM exam_answer WHERE scoreId = #{scoreId} ORDER BY answerId")
+    List<ExamAnswer> findByScoreId(@Param("scoreId") Integer scoreId);
+
+    @Delete("DELETE FROM exam_answer WHERE scoreId = #{scoreId}")
+    int deleteByScoreId(@Param("scoreId") Integer scoreId);
+
+    @Delete("DELETE FROM exam_answer WHERE scoreId IS NULL AND examCode = #{examCode} AND studentId = #{studentId}")
+    int deleteUnlinkedByExamAndStudent(@Param("examCode") Integer examCode, @Param("studentId") Integer studentId);
 
     @Select("SELECT * FROM exam_answer WHERE examCode = #{examCode} AND studentId = #{studentId}")
     List<ExamAnswer> findByExamAndStudent(@Param("examCode") Integer examCode,

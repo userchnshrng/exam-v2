@@ -38,6 +38,7 @@ export interface AnswerResult {
 }
 
 export interface SubmitResult {
+    scoreId: number
     totalScore: number
     correctCount: number
     totalCount: number

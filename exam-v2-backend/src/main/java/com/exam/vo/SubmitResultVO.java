@@ -8,12 +8,15 @@ import java.util.List;
 public class SubmitResultVO {
 
     private int totalScore;             // 总分
+    private Integer scoreId;
     private int correctCount;           // 正确题数
     private int totalCount;             // 总题数
     private List<AnswerResult> details; // 每题详情
 
     public int getTotalScore() { return totalScore; }
     public void setTotalScore(int totalScore) { this.totalScore = totalScore; }
+    public Integer getScoreId() { return scoreId; }
+    public void setScoreId(Integer scoreId) { this.scoreId = scoreId; }
     public int getCorrectCount() { return correctCount; }
     public void setCorrectCount(int correctCount) { this.correctCount = correctCount; }
     public int getTotalCount() { return totalCount; }

@@ -6,6 +6,7 @@ package com.exam.entity;
 public class ExamAnswer {
 
     private Integer answerId;
+    private Integer scoreId;
     private Integer examCode;
     private Integer studentId;
     private Integer questionType;
@@ -20,6 +21,8 @@ public class ExamAnswer {
 
     public Integer getAnswerId() { return answerId; }
     public void setAnswerId(Integer answerId) { this.answerId = answerId; }
+    public Integer getScoreId() { return scoreId; }
+    public void setScoreId(Integer scoreId) { this.scoreId = scoreId; }
     public Integer getExamCode() { return examCode; }
     public void setExamCode(Integer examCode) { this.examCode = examCode; }
     public Integer getStudentId() { return studentId; }

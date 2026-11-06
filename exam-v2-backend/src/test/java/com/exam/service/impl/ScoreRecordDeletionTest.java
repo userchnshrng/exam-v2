@@ -36,7 +36,8 @@ class ScoreRecordDeletionTest {
 
         assertEquals(List.of(2, 3), records.stream().map(Score::getScoreId).toList());
         verify(scores, never()).deleteByExamAndStudent(anyInt(), anyInt());
-        verifyNoInteractions(answers);
+        verify(answers).deleteByScoreId(1);
+        verifyNoMoreInteractions(answers);
     }
 
     @Test void lastAttemptAlsoCleansOnlyItsExamAnswers() {
@@ -44,7 +45,8 @@ class ScoreRecordDeletionTest {
         when(scores.deleteById(1)).thenReturn(1);
         when(scores.countByExamAndStudent(200, 100)).thenReturn(0L);
         service.deleteById(1);
-        verify(answers).deleteByExamAndStudent(200, 100);
+        verify(answers).deleteByScoreId(1);
+        verify(answers).deleteUnlinkedByExamAndStudent(200, 100);
         verifyNoMoreInteractions(answers);
     }
 
@@ -99,8 +101,8 @@ class ScoreRecordDeletionTest {
         for (int studentId : new int[]{100, 101}) {
             for (int examCode : new int[]{200, 201}) {
                 controller.list(studentId, 1, 10);
-                answerController.getByExamAndStudent(examCode, studentId);
-                verify(answerOperations).getByExamAndStudent(examCode, studentId);
+                answerController.getByExamAndStudent(examCode, studentId, null);
+                verify(answerOperations).getByExamAndStudent(examCode, studentId, null);
             }
         }
         Score updatedScore = score(1, 200);

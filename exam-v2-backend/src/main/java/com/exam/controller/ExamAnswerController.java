@@ -28,7 +28,8 @@ public class ExamAnswerController {
      * 获取指定考试的答题详情 — 学生本人查看
      */
     @GetMapping("/{examCode}")
-    public ApiResponse<List<ExamAnswerVO>> getByExam(@PathVariable Integer examCode) {
+    public ApiResponse<List<ExamAnswerVO>> getByExam(@PathVariable Integer examCode,
+                                                   @RequestParam(required = false) Integer scoreId) {
         if (!UserContext.isStudent()) {
             throw new RuntimeException("仅学生可查看考试详情");
         }
@@ -38,7 +39,7 @@ public class ExamAnswerController {
         } catch (NumberFormatException e) {
             throw new RuntimeException("无法获取学生身份");
         }
-        List<ExamAnswerVO> answers = examAnswerService.getByExamAndStudent(examCode, studentId);
+        List<ExamAnswerVO> answers = examAnswerService.getByExamAndStudent(examCode, studentId, scoreId);
         return ApiResponse.success(answers);
     }
 
@@ -48,11 +49,12 @@ public class ExamAnswerController {
     @GetMapping("/{examCode}/{studentId}")
     public ApiResponse<List<ExamAnswerVO>> getByExamAndStudent(
             @PathVariable Integer examCode,
-            @PathVariable Integer studentId) {
+            @PathVariable Integer studentId,
+            @RequestParam(required = false) Integer scoreId) {
         if (!UserContext.isTeacher()) {
             throw new RuntimeException("仅教师可查看学生答题详情");
         }
-        List<ExamAnswerVO> answers = examAnswerService.getByExamAndStudent(examCode, studentId);
+        List<ExamAnswerVO> answers = examAnswerService.getByExamAndStudent(examCode, studentId, scoreId);
         return ApiResponse.success(answers);
     }
 

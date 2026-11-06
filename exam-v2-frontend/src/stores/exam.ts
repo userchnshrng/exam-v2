@@ -34,7 +34,7 @@ export const useExamStore = defineStore('exam', () => {
     // ---- 计算 ----
     const currentQuestion = computed(() => questions.value[currentIndex.value] || null)
     const totalQuestions = computed(() => questions.value.length)
-    const answeredCount = computed(() => Object.keys(answers.value).length)
+    const answeredCount = computed(() => questions.value.filter(q => isAnswered(q.questionType, q.questionId)).length)
     const progress = computed(() => totalQuestions.value > 0
         ? Math.round((answeredCount.value / totalQuestions.value) * 100) : 0)
     const isLastQuestion = computed(() => currentIndex.value >= totalQuestions.value - 1)
@@ -92,7 +92,7 @@ export const useExamStore = defineStore('exam', () => {
     /** 判断某题是否已作答（供答题卡模板使用） */
     function isAnswered(questionType: number, questionId: number): boolean {
         const val = answers.value[answerKey(questionType, questionId)]
-        return val !== undefined && val !== ''
+        return !!val?.trim()
     }
 
     function nextQuestion() {

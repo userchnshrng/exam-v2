@@ -77,7 +77,7 @@ public class ExportServiceImpl implements ExportService {
 
     @Override
     public void exportScores(HttpServletResponse response, Integer examCode) throws IOException {
-        List<Score> list = scoreMapper.list(null, 0, 10000);
+        List<Score> list = scoreMapper.listForExport(examCode);
         Workbook wb = new XSSFWorkbook();
         Sheet sheet = wb.createSheet("成绩数据");
         Row header = sheet.createRow(0);
@@ -91,7 +91,8 @@ public class ExportServiceImpl implements ExportService {
             row.createCell(1).setCellValue(s.getExamCode() != null ? String.valueOf(s.getExamCode()) : "");
             row.createCell(2).setCellValue(s.getStudentId() != null ? String.valueOf(s.getStudentId()) : "");
             row.createCell(3).setCellValue(nn(s.getSubject()));
-            row.createCell(4).setCellValue(s.getEtScore() != null ? String.valueOf(s.getEtScore()) : "");
+            Cell scoreCell = row.createCell(4);
+            if (s.getEtScore() != null) scoreCell.setCellValue(s.getEtScore());
             row.createCell(5).setCellValue(nn(s.getAnswerDate()));
         }
         download(response, wb, "成绩数据.xlsx");

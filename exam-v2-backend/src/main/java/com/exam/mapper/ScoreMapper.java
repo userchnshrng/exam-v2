@@ -34,6 +34,15 @@ public interface ScoreMapper {
     @Select("SELECT * FROM score WHERE scoreId = #{scoreId}")
     Score findById(@Param("scoreId") Integer scoreId);
 
+    @Select("SELECT * FROM score WHERE examCode = #{examCode} AND studentId = #{studentId} ORDER BY scoreId DESC LIMIT 1")
+    Score findLatestByExamAndStudent(@Param("examCode") Integer examCode, @Param("studentId") Integer studentId);
+
+    @Update("UPDATE score SET etScore = #{etScore} WHERE scoreId = #{scoreId}")
+    int updateEtScore(@Param("scoreId") Integer scoreId, @Param("etScore") Integer etScore);
+
+    @Select("SELECT * FROM score WHERE (#{examCode} IS NULL OR examCode = #{examCode}) ORDER BY scoreId DESC")
+    List<Score> listForExport(@Param("examCode") Integer examCode);
+
     @Delete("DELETE FROM score WHERE scoreId = #{scoreId}")
     int deleteById(@Param("scoreId") Integer scoreId);
 

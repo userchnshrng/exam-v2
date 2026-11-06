@@ -58,6 +58,10 @@
           <div class="stat-card__value">{{ wrongCount }}</div>
           <div class="stat-card__label">✗ 错误</div>
         </div>
+        <div class="stat-card stat-total">
+          <div class="stat-card__value">{{ unansweredCount }}</div>
+          <div class="stat-card__label">未作答</div>
+        </div>
         <div class="stat-card stat-rate">
           <div class="stat-card__value">{{ accuracy }}%</div>
           <div class="stat-card__label">正确率</div>
@@ -66,6 +70,7 @@
 
       <!-- 答题表格 -->
       <el-card class="detail-table-card" shadow="never">
+        <el-alert v-if="detailError" :title="detailError" type="warning" :closable="false" show-icon />
         <el-table :data="answerData" v-loading="detailLoading"
                   style="width:100%" empty-text="暂无答题记录"
                   :row-class-name="answerRowClass">
@@ -82,8 +87,8 @@
                   <span v-for="opt in [row.optionA, row.optionB, row.optionC, row.optionD]"
                         :key="opt" class="option-item"
                         :class="{
-                          'option-chosen': opt && row.studentAnswer && opt.startsWith(row.studentAnswer + '.'),
-                          'option-correct': opt && row.correctAnswer && opt.startsWith(row.correctAnswer + '.')
+                          'option-chosen': opt && hasStudentAnswer(row) && opt.startsWith(row.studentAnswer + '.'),
+                          'option-correct': opt && hasStudentAnswer(row) && row.correctAnswer && opt.startsWith(row.correctAnswer + '.')
                         }">
                     {{ opt }}
                   </span>
@@ -93,7 +98,7 @@
           </el-table-column>
           <el-table-column label="我的答案" width="105" align="center">
             <template #default="{ row }">
-              <span :class="row.isCorrect ? 'answer-ok' : 'answer-bad'">{{ row.studentAnswer || '未作答' }}</span>
+              <span :class="hasStudentAnswer(row) ? (row.isCorrect ? 'answer-ok' : 'answer-bad') : ''">{{ hasStudentAnswer(row) ? row.studentAnswer : '未作答' }}</span>
             </template>
           </el-table-column>
           <el-table-column label="正确答案" width="105" align="center">
@@ -103,12 +108,12 @@
           </el-table-column>
           <el-table-column label="判题" width="85" align="center">
             <template #default="{ row }">
-              <el-tag :type="row.isCorrect ? 'success' : 'danger'" size="small" effect="plain" round>
-                {{ row.isCorrect ? '✓ 正确' : '✗ 错误' }}
+              <el-tag :type="!hasStudentAnswer(row) ? 'info' : row.isCorrect ? 'success' : 'danger'" size="small" effect="plain" round>
+                {{ !hasStudentAnswer(row) ? '未作答' : row.isCorrect ? '✓ 正确' : '✗ 错误' }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column prop="score" label="得分" width="70" align="center" />
+          <el-table-column label="得分" width="70" align="center"><template #default="{ row }">{{ hasStudentAnswer(row) ? row.score : 0 }}</template></el-table-column>
           <el-table-column label="操作" width="130" align="center" fixed="right">
             <template #default="{ row }">
               <el-button
@@ -161,7 +166,7 @@ import { MagicStick } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import { useUserStore } from '@/stores/user'
 import { listScores, type ScoreRecord } from '@/api/score'
-import { getExamAnswers, getAiAnalysis, type ExamAnswerRecord } from '@/api/examAnswer'
+import { getExamAnswers, getAiAnalysis, hasStudentAnswer, type ExamAnswerRecord } from '@/api/examAnswer'
 
 interface AnswerRow extends ExamAnswerRecord {
   _aiLoading?: boolean
@@ -182,9 +187,12 @@ const showDetail = ref(false)
 const detailLoading = ref(false)
 const detailSubject = ref('')
 const answerData = ref<AnswerRow[]>([])
+const detailError = ref('')
+let detailRequest = 0
 
-const correctCount = computed(() => answerData.value.filter(a => a.isCorrect).length)
-const wrongCount = computed(() => answerData.value.filter(a => !a.isCorrect).length)
+const correctCount = computed(() => answerData.value.filter(a => hasStudentAnswer(a) && a.isCorrect).length)
+const wrongCount = computed(() => answerData.value.filter(a => hasStudentAnswer(a) && !a.isCorrect).length)
+const unansweredCount = computed(() => answerData.value.filter(a => !hasStudentAnswer(a)).length)
 const accuracy = computed(() => {
   if (answerData.value.length === 0) return 0
   return Math.round((correctCount.value / answerData.value.length) * 100)
@@ -209,6 +217,7 @@ function questionTagType(type: number): string {
 }
 
 function answerRowClass({ row }: { row: AnswerRow }): string {
+  if (!hasStudentAnswer(row)) return ''
   return row.isCorrect ? 'detail-row-correct' : 'detail-row-wrong'
 }
 
@@ -232,11 +241,15 @@ async function fetchList() {
 }
 
 async function showAnswers(row: ScoreRecord) {
+  const request = ++detailRequest
+  answerData.value = []
+  detailError.value = ''
   showDetail.value = true
   detailSubject.value = row.subject
   detailLoading.value = true
   try {
-    const res = await getExamAnswers(row.examCode)
+    const res = await getExamAnswers(row.examCode, row.scoreId)
+    if (request !== detailRequest) return
     if (res.data.code === 0) {
       answerData.value = (res.data.data ?? []).map(a => ({
         ...a,
@@ -244,16 +257,20 @@ async function showAnswers(row: ScoreRecord) {
         _aiAnalysis: undefined
       }))
     } else {
+      detailError.value = res.data.message || '获取答题详情失败'
       ElMessage.error(res.data.message || '获取答题详情失败')
     }
-  } catch {
-    ElMessage.error('获取答题详情失败')
+  } catch (error: any) {
+    if (request !== detailRequest) return
+    detailError.value = error?.response?.data?.message || '获取答题详情失败'
   } finally {
-    detailLoading.value = false
+    if (request === detailRequest) detailLoading.value = false
   }
 }
 
 function backToList() {
+  detailRequest++
+  detailError.value = ''
   showDetail.value = false
   answerData.value = []
   detailSubject.value = ''
@@ -404,7 +421,7 @@ onMounted(() => fetchList())
 /* —— 概览大数字卡片 —— */
 .stat-cards {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 16px;
 }
 .stat-card {

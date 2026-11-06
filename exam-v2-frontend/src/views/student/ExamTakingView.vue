@@ -81,7 +81,7 @@
         <div class="answer-sheet-grid">
           <div
               v-for="(q, idx) in examStore.questions"
-              :key="q.questionId"
+              :key="`${q.questionType}:${q.questionId}`"
               class="sheet-item"
               :class="{
                 'sheet-item--active': idx === examStore.currentIndex,
@@ -215,13 +215,14 @@ async function handleSubmit() {
   // ========== 阶段 3：发送请求 ==========
   try {
     const res = await submitExam(examCode, { examCode, studentId, answers })
-    examStore.markSubmitted()
     if (res.data.code === 0 && res.data.data) {
+      examStore.markSubmitted()
       const result = res.data.data
       ElMessage.success(`交卷成功！得分：${result.totalScore} 分（${result.correctCount}/${result.totalCount}）`)
     } else {
       // 后端返回了 200 但业务 code ≠ 0
       ElMessage.warning(res.data.message || '提交结果异常')
+      return
     }
     router.replace(`/student/score-query`)
   } catch (err: any) {

@@ -12,6 +12,9 @@ public interface ExamAnswerService {
      */
     List<ExamAnswerVO> getByExamAndStudent(Integer examCode, Integer studentId);
 
+    /** 查询指定的一次交卷，不混合历史答卷。 */
+    List<ExamAnswerVO> getByExamAndStudent(Integer examCode, Integer studentId, Integer scoreId);
+
     /**
      * 删除某学生在某场考试的全部答题记录
      */

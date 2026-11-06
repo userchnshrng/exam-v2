@@ -27,9 +27,10 @@ public class ScoreServiceImpl implements ScoreService {
     public void deleteById(Integer scoreId) {
         Score target = getById(scoreId);
         if (scoreMapper.deleteById(scoreId) != 1) throw new RuntimeException("该考试记录已删除，请刷新列表");
-        // 历史答卷没有 scoreId，不能将共享答卷误当作本次答卷一并删除。
+        examAnswerMapper.deleteByScoreId(scoreId);
+        // 只有不再有该场考试成绩时，才清理无法确定次数的遗留答卷。
         if (scoreMapper.countByExamAndStudent(target.getExamCode(), target.getStudentId()) == 0) {
-            examAnswerMapper.deleteByExamAndStudent(target.getExamCode(), target.getStudentId());
+            examAnswerMapper.deleteUnlinkedByExamAndStudent(target.getExamCode(), target.getStudentId());
         }
     }
 

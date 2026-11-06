@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
@@ -23,6 +24,7 @@ public class ExamAnswerServiceImpl implements ExamAnswerService {
     private final MultiQuestionMapper multiQuestionMapper;
     private final FillQuestionMapper fillQuestionMapper;
     private final JudgeQuestionMapper judgeQuestionMapper;
+    private final ScoreMapper scoreMapper;
 
     // DeepSeek 密钥与地址从环境变量读取，避免硬编码进代码或配置文件
     private final String deepseekApiKey = System.getenv("DEEPSEEK-API-KEY");
@@ -35,29 +37,45 @@ public class ExamAnswerServiceImpl implements ExamAnswerService {
     public ExamAnswerServiceImpl(ExamAnswerMapper examAnswerMapper,
                                  MultiQuestionMapper multiQuestionMapper,
                                  FillQuestionMapper fillQuestionMapper,
-                                 JudgeQuestionMapper judgeQuestionMapper) {
+                                 JudgeQuestionMapper judgeQuestionMapper,
+                                 ScoreMapper scoreMapper) {
         this.examAnswerMapper = examAnswerMapper;
         this.multiQuestionMapper = multiQuestionMapper;
         this.fillQuestionMapper = fillQuestionMapper;
         this.judgeQuestionMapper = judgeQuestionMapper;
+        this.scoreMapper = scoreMapper;
     }
 
     @Override
     public List<ExamAnswerVO> getByExamAndStudent(Integer examCode, Integer studentId) {
-        List<ExamAnswer> answers = examAnswerMapper.findByExamAndStudent(examCode, studentId);
+        return getByExamAndStudent(examCode, studentId, null);
+    }
+
+    @Override
+    public List<ExamAnswerVO> getByExamAndStudent(Integer examCode, Integer studentId, Integer scoreId) {
+        Score attempt = scoreId == null ? scoreMapper.findLatestByExamAndStudent(examCode, studentId)
+                : scoreMapper.findById(scoreId);
+        if (attempt == null || !java.util.Objects.equals(attempt.getExamCode(), examCode)
+                || !java.util.Objects.equals(attempt.getStudentId(), studentId)) {
+            throw new RuntimeException("考试成绩不存在或不属于该学生的本场考试");
+        }
+        List<ExamAnswer> answers = examAnswerMapper.findByScoreId(attempt.getScoreId());
+        if (answers.isEmpty()) throw new RuntimeException("历史答卷未关联考试次数，无法可靠展示本次详情");
         List<ExamAnswerVO> result = new ArrayList<>();
 
         for (ExamAnswer a : answers) {
             ExamAnswerVO vo = new ExamAnswerVO();
             vo.setAnswerId(a.getAnswerId());
+            vo.setScoreId(a.getScoreId());
             vo.setExamCode(a.getExamCode());
             vo.setStudentId(a.getStudentId());
             vo.setQuestionType(a.getQuestionType());
             vo.setQuestionId(a.getQuestionId());
             vo.setStudentAnswer(a.getStudentAnswer());
             vo.setCorrectAnswer(a.getCorrectAnswer());
-            vo.setIsCorrect(a.getIsCorrect());
-            vo.setScore(a.getScore());
+            boolean answered = a.getStudentAnswer() != null && !a.getStudentAnswer().isBlank();
+            vo.setIsCorrect(answered && Boolean.TRUE.equals(a.getIsCorrect()));
+            vo.setScore(answered ? a.getScore() : 0);
 
             // 根据题型查题库，填入题干内容
             if (a.getQuestionType() != null) {
@@ -98,8 +116,22 @@ public class ExamAnswerServiceImpl implements ExamAnswerService {
     }
 
     @Override
+    @Transactional
     public int updateAnswer(ExamAnswer answer) {
-        return examAnswerMapper.update(answer);
+        ExamAnswer existing = examAnswerMapper.findById(answer.getAnswerId());
+        if (existing == null) throw new RuntimeException("答题记录不存在");
+        if (existing.getScoreId() == null) throw new RuntimeException("历史答卷未关联考试次数，不能修改以免影响其他次成绩");
+        existing.setStudentAnswer(answer.getStudentAnswer() == null ? "" : answer.getStudentAnswer().strip());
+        boolean answered = !existing.getStudentAnswer().isBlank();
+        if (answered && (answer.getScore() == null || answer.getScore() < 0)) throw new RuntimeException("得分必须为非负数");
+        existing.setIsCorrect(answered && Boolean.TRUE.equals(answer.getIsCorrect()));
+        existing.setScore(answered ? answer.getScore() : 0);
+        int updated = examAnswerMapper.update(existing);
+        int total = examAnswerMapper.findByScoreId(existing.getScoreId()).stream()
+                .filter(a -> a.getStudentAnswer() != null && !a.getStudentAnswer().isBlank())
+                .map(ExamAnswer::getScore).filter(java.util.Objects::nonNull).mapToInt(Integer::intValue).sum();
+        scoreMapper.updateEtScore(existing.getScoreId(), total);
+        return updated;
     }
 
     @Override

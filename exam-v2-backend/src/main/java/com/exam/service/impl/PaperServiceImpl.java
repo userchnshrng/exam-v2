@@ -61,18 +61,49 @@ public class PaperServiceImpl implements PaperService {
     public SubmitResultVO submitAnswers(SubmitAnswerRequest request) {
         ExamManage exam = examManageMapper.findById(request.getExamCode());
         if (exam == null) throw new RuntimeException("考试不存在");
+        if (exam.getPaperId() == null) throw new RuntimeException("该考试尚未关联试卷");
+        if (request.getStudentId() == null) throw new RuntimeException("学生编号不能为空");
 
         // 获取试卷题目（用于对比答案）
         List<Map<String, Object>> mappings = paperManageMapper.listByPaperId(exam.getPaperId());
+        Map<String, ExamQuestionVO> questions = new LinkedHashMap<>();
+        for (ExamQuestionVO question : getPaperQuestions(exam.getPaperId())) {
+            questions.put(question.getQuestionType() + ":" + question.getQuestionId(), question);
+        }
+        if (questions.isEmpty()) throw new RuntimeException("试卷没有可作答的题目");
+        Map<String, String> submittedAnswers = new HashMap<>();
+        if (request.getAnswers() != null) {
+            for (SubmitAnswerRequest.AnswerItem item : request.getAnswers()) {
+                if (item == null) throw new RuntimeException("答题数据无效");
+                String key = item.getQuestionType() + ":" + item.getQuestionId();
+                if (!questions.containsKey(key)) throw new RuntimeException("提交了不属于本试卷的题目");
+                if (submittedAnswers.containsKey(key)) throw new RuntimeException("不能重复提交同一道题");
+                submittedAnswers.put(key, normalize(item.getAnswer()));
+            }
+        }
+
+        // 先生成本次交卷唯一编号，与答卷写入、总分更新保持同一事务。
+        Score score = new Score();
+        score.setExamCode(request.getExamCode());
+        score.setStudentId(request.getStudentId());
+        score.setSubject(exam.getSource());
+        score.setEtScore(0);
+        score.setAnswerDate(new java.text.SimpleDateFormat("yyyy-MM-dd").format(new Date()));
+        scoreMapper.insert(score);
+        if (score.getScoreId() == null) throw new RuntimeException("生成本次考试成绩编号失败");
 
         int totalScore = 0;
         int correctCount = 0;
         List<SubmitResultVO.AnswerResult> details = new ArrayList<>();
 
-        for (SubmitAnswerRequest.AnswerItem item : request.getAnswers()) {
-            String correctAnswer = findCorrectAnswer(mappings, item.getQuestionId(), item.getQuestionType());
-            boolean isCorrect = correctAnswer != null && normalize(item.getAnswer()).equalsIgnoreCase(normalize(correctAnswer));
-            int questionScore = findQuestionScore(mappings, item.getQuestionId(), item.getQuestionType());
+        for (Map.Entry<String, ExamQuestionVO> entry : questions.entrySet()) {
+            ExamQuestionVO question = entry.getValue();
+            String studentAnswer = submittedAnswers.getOrDefault(entry.getKey(), "");
+            String correctAnswer = findCorrectAnswer(mappings, question.getQuestionId(), question.getQuestionType());
+            boolean isCorrect = !studentAnswer.isBlank() && correctAnswer != null
+                    && !normalize(correctAnswer).isBlank()
+                    && studentAnswer.equalsIgnoreCase(normalize(correctAnswer));
+            int questionScore = findQuestionScore(mappings, question.getQuestionId(), question.getQuestionType());
 
             if (isCorrect) {
                 correctCount++;
@@ -81,36 +112,31 @@ public class PaperServiceImpl implements PaperService {
 
             // 保存答题记录
             ExamAnswer answer = new ExamAnswer();
+            answer.setScoreId(score.getScoreId());
             answer.setExamCode(request.getExamCode());
             answer.setStudentId(request.getStudentId());
-            answer.setQuestionType(item.getQuestionType());
-            answer.setQuestionId(item.getQuestionId());
-            answer.setStudentAnswer(item.getAnswer());
+            answer.setQuestionType(question.getQuestionType());
+            answer.setQuestionId(question.getQuestionId());
+            answer.setStudentAnswer(studentAnswer);
             answer.setCorrectAnswer(correctAnswer);
             answer.setIsCorrect(isCorrect);
             answer.setScore(isCorrect ? questionScore : 0);
             examAnswerMapper.insert(answer);
 
             SubmitResultVO.AnswerResult detail = new SubmitResultVO.AnswerResult();
-            detail.setQuestionId(item.getQuestionId());
-            detail.setQuestionType(item.getQuestionType());
-            detail.setStudentAnswer(item.getAnswer());
+            detail.setQuestionId(question.getQuestionId());
+            detail.setQuestionType(question.getQuestionType());
+            detail.setStudentAnswer(studentAnswer);
             detail.setCorrectAnswer(correctAnswer);
             detail.setIsCorrect(isCorrect);
             detail.setScore(isCorrect ? questionScore : 0);
             details.add(detail);
         }
 
-        // 保存总分
-        Score score = new Score();
-        score.setExamCode(request.getExamCode());
-        score.setStudentId(request.getStudentId());
-        score.setSubject(exam.getSource());
-        score.setEtScore(totalScore);
-        score.setAnswerDate(new java.text.SimpleDateFormat("yyyy-MM-dd").format(new Date()));
-        scoreMapper.insert(score);
+        scoreMapper.updateEtScore(score.getScoreId(), totalScore);
 
         SubmitResultVO result = new SubmitResultVO();
+        result.setScoreId(score.getScoreId());
         result.setTotalScore(totalScore);
         result.setCorrectCount(correctCount);
         result.setTotalCount(details.size());
@@ -251,7 +277,10 @@ public class PaperServiceImpl implements PaperService {
 
     @Override
     public List<SubmitResultVO.AnswerResult> getAnswerDetails(Integer examCode, Integer studentId) {
-        List<ExamAnswer> answers = examAnswerMapper.findByExamAndStudent(examCode, studentId);
+        Score latest = scoreMapper.findLatestByExamAndStudent(examCode, studentId);
+        if (latest == null) throw new RuntimeException("未找到本次考试成绩");
+        List<ExamAnswer> answers = examAnswerMapper.findByScoreId(latest.getScoreId());
+        if (answers.isEmpty()) throw new RuntimeException("历史答卷未关联考试次数，无法可靠展示本次详情");
         List<SubmitResultVO.AnswerResult> results = new ArrayList<>();
         for (ExamAnswer a : answers) {
             SubmitResultVO.AnswerResult r = new SubmitResultVO.AnswerResult();
@@ -259,8 +288,9 @@ public class PaperServiceImpl implements PaperService {
             r.setQuestionType(a.getQuestionType());
             r.setStudentAnswer(a.getStudentAnswer());
             r.setCorrectAnswer(a.getCorrectAnswer());
-            r.setIsCorrect(a.getIsCorrect());
-            r.setScore(a.getScore());
+            boolean answered = a.getStudentAnswer() != null && !a.getStudentAnswer().isBlank();
+            r.setIsCorrect(answered && Boolean.TRUE.equals(a.getIsCorrect()));
+            r.setScore(answered ? a.getScore() : 0);
             results.add(r);
         }
         return results;
@@ -331,7 +361,7 @@ public class PaperServiceImpl implements PaperService {
     }
 
     private String normalize(String s) {
-        return s == null ? "" : s.trim();
+        return s == null ? "" : s.strip();
     }
 
     private ExamManage requireComposeExam(Integer paperId, Integer examCode) {

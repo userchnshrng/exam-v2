@@ -7,6 +7,7 @@ public class ExamAnswerVO {
 
     // ---- ExamAnswer 原有字段 ----
     private Integer answerId;
+    private Integer scoreId;
     private Integer examCode;
     private Integer studentId;
     private Integer questionType;   // 1=选择题 2=填空题 3=判断题
@@ -28,6 +29,8 @@ public class ExamAnswerVO {
     // ---- getters / setters ----
     public Integer getAnswerId() { return answerId; }
     public void setAnswerId(Integer answerId) { this.answerId = answerId; }
+    public Integer getScoreId() { return scoreId; }
+    public void setScoreId(Integer scoreId) { this.scoreId = scoreId; }
     public Integer getExamCode() { return examCode; }
     public void setExamCode(Integer examCode) { this.examCode = examCode; }
     public Integer getStudentId() { return studentId; }

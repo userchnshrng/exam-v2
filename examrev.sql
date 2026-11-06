@@ -53,52 +53,54 @@ CREATE TABLE `exam_answer`  (
   `correctAnswer` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NULL DEFAULT NULL COMMENT '正确答案',
   `isCorrect` tinyint(1) NULL DEFAULT 0 COMMENT '是否正确 0错误 1正确',
   `score` int NULL DEFAULT 0 COMMENT '该题实际得分',
-  PRIMARY KEY (`answerId`) USING BTREE
+  `scoreId` int NULL DEFAULT NULL COMMENT '本次交卷对应的成绩编号；NULL表示未关联的历史答卷',
+  PRIMARY KEY (`answerId`) USING BTREE,
+  INDEX `idx_exam_answer_scoreId` (`scoreId`)
 ) ENGINE = InnoDB AUTO_INCREMENT = 41 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '答题记录表' ROW_FORMAT = Dynamic;
 
 -- ----------------------------
 -- Records of exam_answer
 -- ----------------------------
-INSERT INTO `exam_answer` VALUES (1, 20260001, 20154084, 1, 10013, 'B', 'C', 0, 0);
-INSERT INTO `exam_answer` VALUES (2, 20260001, 20154084, 1, 10005, '', 'B', 0, 0);
-INSERT INTO `exam_answer` VALUES (3, 20260001, 20154084, 1, 10001, '', 'D', 0, 0);
-INSERT INTO `exam_answer` VALUES (4, 20260001, 20154084, 1, 10004, '', 'A', 0, 0);
-INSERT INTO `exam_answer` VALUES (5, 20260001, 20154084, 1, 10000, '', 'C', 0, 0);
-INSERT INTO `exam_answer` VALUES (6, 20260001, 20154084, 1, 10016, '', 'B', 0, 0);
-INSERT INTO `exam_answer` VALUES (7, 20260001, 20154084, 1, 10032, '', 'B', 0, 0);
-INSERT INTO `exam_answer` VALUES (8, 20260001, 20154084, 1, 10025, '', 'B', 0, 0);
-INSERT INTO `exam_answer` VALUES (9, 20260001, 20154084, 1, 10030, '', 'A', 0, 0);
-INSERT INTO `exam_answer` VALUES (10, 20260001, 20154084, 1, 10017, '', 'C', 0, 0);
-INSERT INTO `exam_answer` VALUES (11, 20260001, 20154084, 1, 10027, '', 'B', 0, 0);
-INSERT INTO `exam_answer` VALUES (12, 20260001, 20154084, 1, 10023, '', 'A', 0, 0);
-INSERT INTO `exam_answer` VALUES (13, 20260001, 20154084, 1, 10014, '', 'B', 0, 0);
-INSERT INTO `exam_answer` VALUES (14, 20260001, 20154084, 1, 10009, '', 'A', 0, 0);
-INSERT INTO `exam_answer` VALUES (15, 20260001, 20154084, 1, 10008, '', 'A', 0, 0);
-INSERT INTO `exam_answer` VALUES (16, 20260001, 20154084, 1, 10011, '', 'D', 0, 0);
-INSERT INTO `exam_answer` VALUES (17, 20260001, 20154084, 1, 10010, '', 'A', 0, 0);
-INSERT INTO `exam_answer` VALUES (18, 20260001, 20154084, 1, 10021, '', 'D', 0, 0);
-INSERT INTO `exam_answer` VALUES (19, 20260001, 20154084, 1, 10022, '', 'B', 0, 0);
-INSERT INTO `exam_answer` VALUES (20, 20260001, 20154084, 1, 10026, '', 'C', 0, 0);
-INSERT INTO `exam_answer` VALUES (21, 20260001, 20154084, 2, 10017, '', '分组交换网', 0, 0);
-INSERT INTO `exam_answer` VALUES (22, 20260001, 20154084, 2, 10012, '', '网络号主机号', 0, 0);
-INSERT INTO `exam_answer` VALUES (23, 20260001, 20154084, 2, 10004, '', 'CERnet (或中国教育科研网)', 0, 0);
-INSERT INTO `exam_answer` VALUES (24, 20260001, 20154084, 2, 10005, '', ' 广域网       局域网     城域网', 0, 0);
-INSERT INTO `exam_answer` VALUES (25, 20260001, 20154084, 2, 10003, '', '同轴电缆.双绞线 光纤', 0, 0);
-INSERT INTO `exam_answer` VALUES (26, 20260001, 20154084, 2, 10008, '', 'C', 0, 0);
-INSERT INTO `exam_answer` VALUES (27, 20260001, 20154084, 2, 10020, '', '差错纠正  ', 0, 0);
-INSERT INTO `exam_answer` VALUES (28, 20260001, 20154084, 2, 10013, '', '网络报头数据区', 0, 0);
-INSERT INTO `exam_answer` VALUES (29, 20260001, 20154084, 2, 10006, '', 'POP3    SMTP    ', 0, 0);
-INSERT INTO `exam_answer` VALUES (30, 20260001, 20154084, 2, 10015, '', '接口服务', 0, 0);
-INSERT INTO `exam_answer` VALUES (31, 20260001, 20154084, 3, 10002, '', 'F', 0, 0);
-INSERT INTO `exam_answer` VALUES (32, 20260001, 20154084, 3, 10009, '', 'T', 0, 0);
-INSERT INTO `exam_answer` VALUES (33, 20260001, 20154084, 3, 10003, '', 'F', 0, 0);
-INSERT INTO `exam_answer` VALUES (34, 20260001, 20154084, 3, 10005, '', 'T', 0, 0);
-INSERT INTO `exam_answer` VALUES (35, 20260001, 20154084, 3, 10004, '', 'F', 0, 0);
-INSERT INTO `exam_answer` VALUES (36, 20260001, 20154084, 3, 10012, '', 'F', 0, 0);
-INSERT INTO `exam_answer` VALUES (37, 20260001, 20154084, 3, 10011, '', 'T', 0, 0);
-INSERT INTO `exam_answer` VALUES (38, 20260001, 20154084, 3, 10006, '', 'F', 0, 0);
-INSERT INTO `exam_answer` VALUES (39, 20260001, 20154084, 3, 10008, '', 'T', 0, 0);
-INSERT INTO `exam_answer` VALUES (40, 20260001, 20154084, 3, 10001, '', 'T', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (1, 20260001, 20154084, 1, 10013, 'B', 'C', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (2, 20260001, 20154084, 1, 10005, '', 'B', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (3, 20260001, 20154084, 1, 10001, '', 'D', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (4, 20260001, 20154084, 1, 10004, '', 'A', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (5, 20260001, 20154084, 1, 10000, '', 'C', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (6, 20260001, 20154084, 1, 10016, '', 'B', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (7, 20260001, 20154084, 1, 10032, '', 'B', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (8, 20260001, 20154084, 1, 10025, '', 'B', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (9, 20260001, 20154084, 1, 10030, '', 'A', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (10, 20260001, 20154084, 1, 10017, '', 'C', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (11, 20260001, 20154084, 1, 10027, '', 'B', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (12, 20260001, 20154084, 1, 10023, '', 'A', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (13, 20260001, 20154084, 1, 10014, '', 'B', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (14, 20260001, 20154084, 1, 10009, '', 'A', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (15, 20260001, 20154084, 1, 10008, '', 'A', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (16, 20260001, 20154084, 1, 10011, '', 'D', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (17, 20260001, 20154084, 1, 10010, '', 'A', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (18, 20260001, 20154084, 1, 10021, '', 'D', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (19, 20260001, 20154084, 1, 10022, '', 'B', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (20, 20260001, 20154084, 1, 10026, '', 'C', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (21, 20260001, 20154084, 2, 10017, '', '分组交换网', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (22, 20260001, 20154084, 2, 10012, '', '网络号主机号', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (23, 20260001, 20154084, 2, 10004, '', 'CERnet (或中国教育科研网)', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (24, 20260001, 20154084, 2, 10005, '', ' 广域网       局域网     城域网', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (25, 20260001, 20154084, 2, 10003, '', '同轴电缆.双绞线 光纤', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (26, 20260001, 20154084, 2, 10008, '', 'C', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (27, 20260001, 20154084, 2, 10020, '', '差错纠正  ', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (28, 20260001, 20154084, 2, 10013, '', '网络报头数据区', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (29, 20260001, 20154084, 2, 10006, '', 'POP3    SMTP    ', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (30, 20260001, 20154084, 2, 10015, '', '接口服务', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (31, 20260001, 20154084, 3, 10002, '', 'F', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (32, 20260001, 20154084, 3, 10009, '', 'T', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (33, 20260001, 20154084, 3, 10003, '', 'F', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (34, 20260001, 20154084, 3, 10005, '', 'T', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (35, 20260001, 20154084, 3, 10004, '', 'F', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (36, 20260001, 20154084, 3, 10012, '', 'F', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (37, 20260001, 20154084, 3, 10011, '', 'T', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (38, 20260001, 20154084, 3, 10006, '', 'F', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (39, 20260001, 20154084, 3, 10008, '', 'T', 0, 0);
+INSERT INTO `exam_answer` (`answerId`, `examCode`, `studentId`, `questionType`, `questionId`, `studentAnswer`, `correctAnswer`, `isCorrect`, `score`) VALUES (40, 20260001, 20154084, 3, 10001, '', 'T', 0, 0);
 
 -- ----------------------------
 -- Table structure for exam_manage
